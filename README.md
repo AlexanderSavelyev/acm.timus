@@ -1,1 +1,1 @@
-# acm.timus
+## acm.timus.ru tasks solutions (randomly resolved)
