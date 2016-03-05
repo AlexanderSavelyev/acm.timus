@@ -23,7 +23,7 @@ public class Task {
 
    void run() throws IOException {
       boolean oj = System.getProperty("ONLINE_JUDGE") != null;
-      Reader reader = oj ? new InputStreamReader(System.in) : new FileReader("../input.txt");
+      Reader reader = oj ? new InputStreamReader(System.in) : new FileReader("input.txt");
       //Writer writer = oj ? new OutputStreamWriter(System.out) : new FileWriter("output.txt");\
       Writer writer = new OutputStreamWriter(System.out);
       in = new StreamTokenizer(new BufferedReader(reader));
