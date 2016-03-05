@@ -4,7 +4,9 @@
  * and open the template in the editor.
  */
 import java.io.*;
+import java.util.Map;
 import java.util.StringTokenizer;
+import java.util.TreeMap;
 /**
  *
  */
@@ -41,12 +43,47 @@ public class Task1067 {
       solve();
       out.flush();
    }
-   
+   class Node {
+      public TreeMap<String, Node> nodes = new TreeMap<>();
+   }
    void solve() throws IOException {
       int N = Integer.parseInt(in.readLine());
+      StringTokenizer tokens;
+      Node root = new Node();
+      
       for (int i = 0; i < N; i++) {
-         out.println(in.readLine());
+         tokens = new StringTokenizer(in.readLine(), "\\");
+         Node currentNode = root;
+         Node parent = null;
+         String parentName = null;
+         while(tokens.hasMoreTokens()){
+            String name = tokens.nextToken();
+            if(currentNode == null && parent != null) {
+               currentNode = new Node();
+               parent.nodes.put(parentName, currentNode);
+            }
+            if(!currentNode.nodes.containsKey(name)) {
+               currentNode.nodes.put(name, null);
+            }
+            parent = currentNode;
+            currentNode = currentNode.nodes.get(name);
+            parentName = name;
+         }
+      }
+      printNodes(root, 0);
+   }
+   void printNodes(Node node, int level) {
+      for(Map.Entry<String, Node> kv :node.nodes.entrySet()) {
+//         for (int i = 0; i < level; i++) {
+//            out.print(" ");
+//         }
+         if(level > 0) {
+            out.format("%" + level + "s", "");
+         }
+         out.println(kv.getKey());
+         if(kv.getValue() != null) {
+            printNodes(kv.getValue(), level + 1);
+         }
       }
    }
-   
 }
