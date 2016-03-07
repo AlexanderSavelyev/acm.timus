@@ -1,12 +1,6 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 /**
  *
- * @author Aleksandr_Savelev
+ * http://acm.timus.ru/problem.aspx?space=1&num=1429
  */
 public class Task {
 
