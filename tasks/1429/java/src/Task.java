@@ -1,4 +1,3 @@
-
 import java.io.*;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -28,11 +27,8 @@ public class Task {
       out.flush();
    }
 
-   private double dist(Circle c1, Circle c2) {
-      return Math.sqrt(Math.pow(c1.center.first - c2.center.first, 2) + Math.pow(c1.center.second - c2.center.second, 2));
-   }
 
-   private Pair<Integer, Integer> getRandomPoint() {
+   public Pair<Integer, Integer> getRandomPoint() {
       nextRandom++;
       return new Pair(nextRandom, nextRandom);
    }
@@ -70,33 +66,62 @@ public class Task {
 
    }
 
-   class Circle {
+   public static float roundFloat(double in) {
+      return ((int) ((in * 1000f) + 0.5f)) / 1000f;
+   }
+   public class Circle {
 
       public Pair<Integer, Integer> center;
       public int radius;
-      public HashSet<Pair<Integer, Integer>> borders = new HashSet<>();
-      public HashSet<Pair<Integer, Integer>> vertices = new HashSet<>();
+//      public HashSet<Pair<Integer, Integer>> borders = new HashSet<>();
+//      public HashSet<Pair<Integer, Integer>> vertices = new HashSet<>();
+      public HashSet<Pair<Float, Float>> vertices = new HashSet<>();
 
-      private Circle(int x, int y, int r) {
+      public Circle(int x, int y, int r) {
          center = new Pair(x, y);
          radius = r;
-         borders.add(new Pair(x + r, y));
-         borders.add(new Pair(x, y - r));
-         borders.add(new Pair(x - r, y));
-         borders.add(new Pair(x, y + r));
+//         borders.add(new Pair(x + r, y));
+//         borders.add(new Pair(x, y - r));
+//         borders.add(new Pair(x - r, y));
+//         borders.add(new Pair(x, y + r));
       }
 
-      private void addVertex(Pair<Integer, Integer> b) {
+      public void addVertex(Pair<Float, Float> b) {
          vertices.add(b);
       }
       public int getEdgesCount() {
          return vertices.size();
       }
+      public boolean equals(Circle other) {
+         return radius == other.radius && center.equals(other.center);
+      }
+      
+      public LinkedList<Pair<Float,Float>> calculateVertex(Circle other) {
+         LinkedList<Pair<Float,Float>> res = new LinkedList<>();
+         double d = dist(other);
+         
+         int dx = other.center.first - center.first;
+         int dy = other.center.second - center.second;
+         double base = Math.signum(dy)*Math.acos((dx*dx + d*d - dy*dy)/(2*dx*d));
+         //System.out.println("base = " + base);
+         double diff = Math.acos((radius * radius + d * d - other.radius * other.radius)/(2*radius*d));
+         double a1 = base + diff;
+         double a2 = base - diff;
+         
+         res.add(new Pair(radius * Math.cos(a1), radius * Math.sin(a1)));
+         if(a2 != a1) {
+            res.add(new Pair(radius * Math.cos(a2), radius * Math.sin(a2)));
+         }
+         return res;
+      }
+      
+      public double dist(Circle c2) {
+         Circle c1 = this;
+         return Math.sqrt(Math.pow(c1.center.first - c2.center.first, 2) + Math.pow(c1.center.second - c2.center.second, 2));
+      }
    }
 
    class Graph {
-
-
       class Node {
 
          public BitSet nei;
@@ -127,18 +152,18 @@ public class Task {
       }
 
       private int bfs(ArrayList<Circle> circles) {
-         for (int v = 0; v < N; v++) {
+         for (int v = 0; v < circles.size(); v++) {
             marked[v] = false;
          }
          int  c_res=0;
-         for (int v = 0; v < N; v++) {
+         for (int v = 0; v < circles.size(); v++) {
             if (!marked[v]) {
-               HashSet<Integer> comp = bfs(v);;
-               HashSet<Pair<Integer, Integer>> comp_vertices = new HashSet<>();
+               HashSet<Integer> comp = bfs(v);
+               HashSet<Pair<Float, Float>> comp_vertices = new HashSet<>();
                int comp_edges = 0;
                for(Integer c : comp) {
                   Circle comp_cir = circles.get(c);
-                  for(Pair<Integer, Integer> comp_v: comp_cir.vertices) {
+                  for(Pair<Float, Float> comp_v: comp_cir.vertices) {
                      comp_vertices.add(comp_v);
                   }
                   comp_edges += comp_cir.getEdgesCount();
@@ -176,41 +201,54 @@ public class Task {
 
    void solve() throws IOException {
       int N = nextInt();
+      
       ArrayList<Circle> circles = new ArrayList<>(N);
       Graph graph = new Graph(N);
+      HashSet<Pair<Integer, Pair<Integer, Integer>>> cirq_unique = new HashSet<>();
       for (int i = 0; i < N; i++) {
          Circle c_cur = new Circle(nextInt(), nextInt(), nextInt());
+         Pair p_cur = new Pair(c_cur.radius, c_cur.center);
+         if(cirq_unique.contains(p_cur)) {
+            continue;
+         } else {
+            cirq_unique.add(p_cur);
+         }
          circles.add(c_cur);
          for (int j = 0; j < i; j++) {
             Circle c_ex = circles.get(j);
-            double d = dist(c_cur, c_ex);
+            double d = c_cur.dist(c_ex);
             int r_sum = c_cur.radius + c_ex.radius;
             if (d <= r_sum) {
                int num_b = 0;
-               for (Pair<Integer, Integer> b : c_cur.borders) {
-                  if (c_ex.borders.contains(b)) {
-                     num_b++;
-                     c_ex.addVertex(b);
-                     c_cur.addVertex(b);
-                  }
-               }
+//               for (Pair<Integer, Integer> b : c_cur.borders) {
+//                  if (c_ex.borders.contains(b)) {
+//                     num_b++;
+//                     c_ex.addVertex(b);
+//                     c_cur.addVertex(b);
+//                  }
+//               }
                int r_dif = Math.abs(c_cur.radius - c_ex.radius);
-               if (d == r_sum) {
-                  if (num_b == 0) {
-                     throw new RuntimeException("Incorrect algorithm");
-                  }
-               } else if (d == r_dif) {
-                  if (num_b == 0) {
-                     throw new RuntimeException("Incorrect algorithm");
-                  }
-               } else if (d > r_dif) {
-                  for (int p = num_b; p < 2; p++) {
-                     Pair<Integer, Integer> rp = getRandomPoint();
-                     c_ex.addVertex(rp);
-                     c_cur.addVertex(rp);
-                  }
-               }
+//               if (d == r_sum) {
+//                  if (num_b == 0) {
+//                     throw new RuntimeException("Incorrect algorithm");
+//                  }
+//               } else if (d == r_dif) {
+//                  if (num_b == 0) {
+//                     throw new RuntimeException("Incorrect algorithm");
+//                  }
+//               } else if (d > r_dif ) {
+//                  for (int p = num_b; p < 2; p++) {
+//                     Pair<Integer, Integer> rp = getRandomPoint();
+//                     c_ex.addVertex(rp);
+//                     c_cur.addVertex(rp);
+//                  }
+//               }
                if (d >= r_dif) {
+                  LinkedList<Pair<Float, Float>> ve = c_cur.calculateVertex(c_ex);
+                  for(Pair<Float, Float> vp : ve) {
+                     c_cur.addVertex(vp);
+                     c_ex.addVertex(vp);
+                  }
                   graph.insertEdge(i, j);
                }
 
