@@ -67,7 +67,7 @@ public class Task {
    }
 
    public static float roundFloat(double in) {
-      return ((int) ((in * 100000f) + 0.5f)) / 100000f;
+      return ((int) ((in * 1000f) + 0.5f)) / 1000f;
    }
    public class Circle {
 
@@ -221,7 +221,8 @@ public class Task {
             cirq_unique.add(p_cur);
          }
          circles.add(c_cur);
-         for (int j = 0; j < i; j++) {
+         int cur_idx = circles.size() - 1;
+         for (int j = 0; j < cur_idx; j++) {
             Circle c_ex = circles.get(j);
             double d = c_cur.dist(c_ex);
             int r_sum = c_cur.radius + c_ex.radius;
@@ -267,7 +268,7 @@ public class Task {
                   
                   
                   
-                  graph.insertEdge(i, j);
+                  graph.insertEdge(cur_idx, j);
                }
 
             }
