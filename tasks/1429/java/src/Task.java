@@ -102,7 +102,10 @@ public class Task {
          
          int dx = other.center.first - center.first;
          int dy = other.center.second - center.second;
-         double base = Math.signum(dy + 0.1)*Math.acos((dx*dx + d*d - dy*dy)/(2*dx*d));
+         double base = Math.PI / 2.0f;
+         if(dx != 0) {
+            base = Math.signum(dy + 0.1)*Math.acos((dx*dx + d*d - dy*dy)/(2*dx*d));
+         }
          //System.out.println("base = " + base);
          double diff = Math.acos((radius * radius + d * d - other.radius * other.radius)/(2*radius*d));
          double a1 = base + diff;

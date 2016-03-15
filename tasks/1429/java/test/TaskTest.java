@@ -73,7 +73,17 @@ public class TaskTest {
       new Task().run(reader, writer);
       assertEquals("95847", writer.getBuffer().toString().trim());
    }
-   
+   @Test
+   public void testRun6() throws Exception {
+      //Reader reader = new FileReader("input.txt");
+      String test = "2\n" +
+"0 0 2\n" +
+"0 0 3";
+      Reader reader = new InputStreamReader(new ByteArrayInputStream(test.getBytes()));
+      StringWriter writer = new StringWriter();
+      new Task().run(reader, writer);
+      assertEquals("3", writer.getBuffer().toString().trim());
+   }
    @Test
    public void testVertices() {
       Task t = new Task();
@@ -82,8 +92,8 @@ public class TaskTest {
       LinkedList<Task.Pair<Float, Float>> p = c1.calculateVertex(c2);
       assertEquals(2, p.size());
       
-      c1 = t.new Circle(0, 0, 3);
-      c2 = t.new Circle(4, 1, 2);
+      c1 = t.new Circle(-5, -5, 3);
+      c2 = t.new Circle(-1, -5, 2);
       p = c1.calculateVertex(c2);
       assertEquals(2, p.size());
       
@@ -95,6 +105,11 @@ public class TaskTest {
       p=c2.calculateVertex(c1);
       Task.Pair<Float, Float> p2 = p.get(0);
       assertEquals(p1, p2);
+      
+//      c1 = t.new Circle(0, 0, 3);
+//      c2 = t.new Circle(0, 0, 2);
+//      p = c1.calculateVertex(c2);
+//      assertEquals(1, p.size());
    }
 
 }
