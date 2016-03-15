@@ -108,9 +108,9 @@ public class Task {
          double a1 = base + diff;
          double a2 = base - diff;
          
-         res.add(new Pair(radius * Math.cos(a1), radius * Math.sin(a1)));
+         res.add(new Pair(center.first + radius * Math.cos(a1), center.second + radius * Math.sin(a1)));
          if(a2 != a1) {
-            res.add(new Pair(radius * Math.cos(a2), radius * Math.sin(a2)));
+            res.add(new Pair(center.first + radius * Math.cos(a2), center.second + radius * Math.sin(a2)));
          }
          return res;
       }
