@@ -67,7 +67,7 @@ public class Task {
    }
 
    public static float roundFloat(double in) {
-      return ((int) ((in * 1000f) + 0.5f)) / 1000f;
+      return ((int) ((in * 100000f) + 0.5f)) / 100000f;
    }
    public class Circle {
 
@@ -102,15 +102,15 @@ public class Task {
          
          int dx = other.center.first - center.first;
          int dy = other.center.second - center.second;
-         double base = Math.signum(dy)*Math.acos((dx*dx + d*d - dy*dy)/(2*dx*d));
+         double base = Math.signum(dy + 0.1)*Math.acos((dx*dx + d*d - dy*dy)/(2*dx*d));
          //System.out.println("base = " + base);
          double diff = Math.acos((radius * radius + d * d - other.radius * other.radius)/(2*radius*d));
          double a1 = base + diff;
          double a2 = base - diff;
          
-         res.add(new Pair(center.first + radius * Math.cos(a1), center.second + radius * Math.sin(a1)));
+         res.add(calcVert(a1));
          if(a2 != a1) {
-            res.add(new Pair(center.first + radius * Math.cos(a2), center.second + radius * Math.sin(a2)));
+            res.add(calcVert(a2));
          }
          return res;
       }
@@ -118,6 +118,10 @@ public class Task {
       public double dist(Circle c2) {
          Circle c1 = this;
          return Math.sqrt(Math.pow(c1.center.first - c2.center.first, 2) + Math.pow(c1.center.second - c2.center.second, 2));
+      }
+
+      private Pair<Float, Float> calcVert(double angle) {
+         return new Pair(roundFloat(center.first + radius * Math.cos(angle)), roundFloat(center.second + radius * Math.sin(angle)));
       }
    }
 
@@ -219,7 +223,7 @@ public class Task {
             double d = c_cur.dist(c_ex);
             int r_sum = c_cur.radius + c_ex.radius;
             if (d <= r_sum) {
-               int num_b = 0;
+//               int num_b = 0;
 //               for (Pair<Integer, Integer> b : c_cur.borders) {
 //                  if (c_ex.borders.contains(b)) {
 //                     num_b++;
@@ -245,10 +249,21 @@ public class Task {
 //               }
                if (d >= r_dif) {
                   LinkedList<Pair<Float, Float>> ve = c_cur.calculateVertex(c_ex);
+                  
+//                  LinkedList<Pair<Float, Float>> ve2 = c_ex.calculateVertex(c_cur);
+//                  HashSet<Pair<Float, Float>> checkList = new HashSet<>();
+//                  checkList.addAll(ve2);
+                  
                   for(Pair<Float, Float> vp : ve) {
                      c_cur.addVertex(vp);
                      c_ex.addVertex(vp);
+//                     if(!checkList.contains(vp)) {
+//                        throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
+//                     }
                   }
+                  
+                  
+                  
                   graph.insertEdge(i, j);
                }
 

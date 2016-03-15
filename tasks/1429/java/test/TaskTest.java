@@ -5,6 +5,7 @@
  */
 
 import java.io.*;
+import java.util.LinkedList;
 import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 
@@ -76,22 +77,24 @@ public class TaskTest {
    @Test
    public void testVertices() {
       Task t = new Task();
-//      Task.Circle c1 = t.new Circle(0, 0, 3);
-//      Task.Circle c2 = t.new Circle(4, 0, 2);
-//      c1.calculateVertex(c2);
-//      
-//      c1 = t.new Circle(0, 0, 3);
-//      c2 = t.new Circle(4, 1, 2);
-//      c1.calculateVertex(c2);
-//      
-//      c1 = t.new Circle(0, 0, 3);
-//      c2 = t.new Circle(4, -1, 2);
-//      c1.calculateVertex(c2);
+      Task.Circle c1 = t.new Circle(0, 0, 3);
+      Task.Circle c2 = t.new Circle(4, 0, 2);
+      LinkedList<Task.Pair<Float, Float>> p = c1.calculateVertex(c2);
+      assertEquals(2, p.size());
       
+      c1 = t.new Circle(0, 0, 3);
+      c2 = t.new Circle(4, 1, 2);
+      p = c1.calculateVertex(c2);
+      assertEquals(2, p.size());
       
-//      c1 = t.new Circle(0, 0, 3);
-//      c2 = t.new Circle(-4, 1, 2);
-//      c1.calculateVertex(c2);
+      c1 = t.new Circle(0, 0, 3);
+      c2 = t.new Circle(4, 3, 2);
+      p = c1.calculateVertex(c2);
+      assertEquals(1, p.size());
+      Task.Pair<Float, Float> p1 = p.get(0);
+      p=c2.calculateVertex(c1);
+      Task.Pair<Float, Float> p2 = p.get(0);
+      assertEquals(p1, p2);
    }
 
 }
