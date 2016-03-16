@@ -13,7 +13,6 @@ public class Task {
    }
    StreamTokenizer in;
    PrintWriter out;
-   private int nextRandom = 50000;
 
    int nextInt() throws IOException {
       in.nextToken();
@@ -28,11 +27,6 @@ public class Task {
    }
 
 
-   public Pair<Integer, Integer> getRandomPoint() {
-      nextRandom++;
-      return new Pair(nextRandom, nextRandom);
-   }
-
    public class Pair<A, B> {
 
       public A first;
@@ -44,12 +38,14 @@ public class Task {
          this.second = second;
       }
 
+      @Override
       public int hashCode() {
          int hashFirst = first != null ? first.hashCode() : 0;
          int hashSecond = second != null ? second.hashCode() : 0;
          return (hashFirst + hashSecond) * hashSecond + hashFirst;
       }
 
+      @Override
       public boolean equals(Object other) {
          Pair otherPair = (Pair) other;
          return ((this.first == otherPair.first
@@ -60,14 +56,15 @@ public class Task {
                  && this.second.equals(otherPair.second))));
       }
 
+      @Override
       public String toString() {
          return "(" + first + ", " + second + ")";
       }
 
    }
 
-   public static float roundFloat(double in) {
-      return ((int) ((in * 1000f) + 0.5f)) / 1000f;
+   public static double roundFloat(double in) {
+      return ((int) ((in * 100000d) + 0.5d)) / 100000d;
    }
    public class Circle {
 
@@ -96,9 +93,11 @@ public class Task {
          
          int dx = other.center.first - center.first;
          int dy = other.center.second - center.second;
-         double base = Math.PI / 2.0f;
+         double base = 0;
          if(dx != 0) {
             base = Math.signum(dy + 0.1)*Math.acos((dx*dx + d*d - dy*dy)/(2*dx*d));
+         } else {
+            base = Math.signum(dy + 0.1)*Math.PI / 2.0f;
          }
          //System.out.println("base = " + base);
          double diff = Math.acos((radius * radius + d * d - other.radius * other.radius)/(2*radius*d));
@@ -133,12 +132,10 @@ public class Task {
       }
 
       public ArrayList<Node> nodes;
-      private final int N;
       private final boolean[] marked;  // marked[v] = is there an s-v path
       LinkedList<Integer> q = new LinkedList<>();
 
       public Graph(int N) {
-         this.N = N;
          nodes = new ArrayList<>(N);
          for (int i = 0; i < N; i++) {
             nodes.add(new Node(N));
@@ -222,16 +219,17 @@ public class Task {
                if (d >= r_dif) {
                   LinkedList<Pair<Float, Float>> ve = c_cur.calculateVertex(c_ex);
                   
-//                  LinkedList<Pair<Float, Float>> ve2 = c_ex.calculateVertex(c_cur);
-//                  HashSet<Pair<Float, Float>> checkList = new HashSet<>();
-//                  checkList.addAll(ve2);
+                  LinkedList<Pair<Float, Float>> ve2 = c_ex.calculateVertex(c_cur);
+                  HashSet<Pair<Float, Float>> checkList = new HashSet<>();
+                  checkList.addAll(ve2);
                   
                   for(Pair<Float, Float> vp : ve) {
                      c_cur.addVertex(vp);
                      c_ex.addVertex(vp);
-//                     if(!checkList.contains(vp)) {
-//                        throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
-//                     }
+                     if(!checkList.contains(vp)) {
+                        //if(ve2.get(1).first == vp.first)
+                           throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
+                     }
                   }
                   
                   
