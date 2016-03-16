@@ -73,17 +73,11 @@ public class Task {
 
       public Pair<Integer, Integer> center;
       public int radius;
-//      public HashSet<Pair<Integer, Integer>> borders = new HashSet<>();
-//      public HashSet<Pair<Integer, Integer>> vertices = new HashSet<>();
       public HashSet<Pair<Float, Float>> vertices = new HashSet<>();
 
       public Circle(int x, int y, int r) {
          center = new Pair(x, y);
          radius = r;
-//         borders.add(new Pair(x + r, y));
-//         borders.add(new Pair(x, y - r));
-//         borders.add(new Pair(x - r, y));
-//         borders.add(new Pair(x, y + r));
       }
 
       public void addVertex(Pair<Float, Float> b) {
@@ -192,9 +186,6 @@ public class Task {
             int v = q.pollLast();
             BitSet bs = nodes.get(v).nei;
             for (int w = bs.nextSetBit(0); w >= 0; w = bs.nextSetBit(w + 1)) {
-//            if (w == to) {
-//               return true;
-//            }
                if (!marked[w]) {
                   marked[w] = true;
                   q.add(w);
@@ -227,30 +218,7 @@ public class Task {
             double d = c_cur.dist(c_ex);
             int r_sum = c_cur.radius + c_ex.radius;
             if (d <= r_sum) {
-//               int num_b = 0;
-//               for (Pair<Integer, Integer> b : c_cur.borders) {
-//                  if (c_ex.borders.contains(b)) {
-//                     num_b++;
-//                     c_ex.addVertex(b);
-//                     c_cur.addVertex(b);
-//                  }
-//               }
                int r_dif = Math.abs(c_cur.radius - c_ex.radius);
-//               if (d == r_sum) {
-//                  if (num_b == 0) {
-//                     throw new RuntimeException("Incorrect algorithm");
-//                  }
-//               } else if (d == r_dif) {
-//                  if (num_b == 0) {
-//                     throw new RuntimeException("Incorrect algorithm");
-//                  }
-//               } else if (d > r_dif ) {
-//                  for (int p = num_b; p < 2; p++) {
-//                     Pair<Integer, Integer> rp = getRandomPoint();
-//                     c_ex.addVertex(rp);
-//                     c_cur.addVertex(rp);
-//                  }
-//               }
                if (d >= r_dif) {
                   LinkedList<Pair<Float, Float>> ve = c_cur.calculateVertex(c_ex);
                   
