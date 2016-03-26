@@ -27,6 +27,11 @@ public class Task {
       out.flush();
    }
 
+   private void makeOver() {
+      ArrayList<Double> list = new ArrayList<>(1000000000);
+      
+   }
+
    public class Pair<A, B> {
 
       public A first;
@@ -63,15 +68,18 @@ public class Task {
 
    }
 
-   public static double roundDouble(double in) {
-      return ((int) ((in * 10000d) + 0.5d)) / 10000d;
+   public static long roundDouble(double in) {
+//      return ((int) ((in * 10000d) + 0.5d)) / 10000d;
+//      return Math.round(in * 10000d) / 10000d;
+//      return ((int) ((in * 10000d) + Math.signum(in) * 0.5d)) / 10000d;
+      return Math.round(in * 1000000d);
    }
 
    public class Circle {
 
       public Pair<Integer, Integer> center;
       public int radius;
-      public HashSet<Pair<Double, Double>> vertices = new HashSet<>();
+      public HashSet<Pair<Long, Long>> vertices = new HashSet<>();
       private double EPS = 0.0000001;
 
       public Circle(int x, int y, int r) {
@@ -79,7 +87,7 @@ public class Task {
          radius = r;
       }
 
-      public void addVertex(Pair<Double, Double> b) {
+      public void addVertex(Pair<Long, Long> b) {
          vertices.add(b);
       }
 
@@ -91,8 +99,8 @@ public class Task {
          return radius == other.radius && center.equals(other.center);
       }
 
-      public LinkedList<Pair<Double, Double>> calculateVertex(Circle other) {
-         LinkedList<Pair<Double, Double>> res = new LinkedList<>();
+      public LinkedList<Pair<Long, Long>> calculateVertex(Circle other) {
+         LinkedList<Pair<Long, Long>> res = new LinkedList<>();
          double d = dist(other);
 
          int dx = other.center.first - center.first;
@@ -101,7 +109,8 @@ public class Task {
          if (dx != 0 && dy != 0) {
             base = Math.signum(dy) * Math.acos((dx * dx + d * d - dy * dy) / (2 * dx * d));
          } else if(dy != 0) {
-            base = Math.signum(dy) * Math.PI / 2.0f;
+//            base = Math.signum(dy) * Math.PI / 2.0f;
+            base = dy > 0 ? Math.PI / 2.0d : 3.0d*  Math.PI / 2.0d;
          } else if (dx != 0) {
             base = dx > 0 ? 0: Math.PI;
          } else {
@@ -118,7 +127,8 @@ public class Task {
          double a2 = base - diff;
 
          res.add(calcVert(a1));
-         if (Math.abs(a2 - a1) > EPS) {
+//         if (Math.abs(a2 - a1) > EPS) {
+         if (a1 != a2) {
             res.add(calcVert(a2));
          }
          return res;
@@ -129,7 +139,7 @@ public class Task {
          return Math.sqrt(Math.pow(c1.center.first - c2.center.first, 2) + Math.pow(c1.center.second - c2.center.second, 2));
       }
 
-      private Pair<Double, Double> calcVert(double angle) {
+      private Pair<Long, Long> calcVert(double angle) {
          return new Pair(roundDouble(center.first + radius * Math.cos(angle)), roundDouble(center.second + radius * Math.sin(angle)));
       }
    }
@@ -171,12 +181,12 @@ public class Task {
          for (int v = 0; v < circles.size(); v++) {
             if (!marked[v]) {
                HashSet<Integer> comp = bfs(v);
-               HashSet<Pair<Double, Double>> comp_vertices = new HashSet<>();
+               HashSet<Pair<Long, Long>> comp_vertices = new HashSet<>();
                int comp_edges = 0;
                for (Integer c : comp) {
                   Circle comp_cir = circles.get(c);
 
-                  for (Pair<Double, Double> comp_v : comp_cir.vertices) {
+                  for (Pair<Long, Long> comp_v : comp_cir.vertices) {
                      comp_vertices.add(comp_v);
                   }
 
@@ -234,18 +244,25 @@ public class Task {
             if (d <= r_sum) {
                int r_dif = Math.abs(c_cur.radius - c_ex.radius);
                if (d >= r_dif) {
-                  LinkedList<Pair<Double, Double>> ve = c_cur.calculateVertex(c_ex);
+                  LinkedList<Pair<Long, Long>> ve = c_cur.calculateVertex(c_ex);
 
-                  LinkedList<Pair<Double, Double>> ve2 = c_ex.calculateVertex(c_cur);
+                  LinkedList<Pair<Long, Long>> ve2 = c_ex.calculateVertex(c_cur);
                   checkList.clear();
-                  checkList.addAll(ve);
+//                  checkList.addAll(ve);
+//                  int x = 0;
 
-                  for (Pair<Double, Double> vp : ve2) {
+                  for (Pair<Long, Long> vp : ve2) {
                      c_cur.addVertex(vp);
                      c_ex.addVertex(vp);
-                     if (!checkList.contains(vp) ) {
+                     
+                     if (!ve.contains(vp) ) {
+//                        if(!ve.get(0).first.equals(vp.first)) {
+                        if(Math.abs(ve.get(0).first - vp.first) < 0.00001) {
+                          makeOver();
+                        } 
                         throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
                      }
+//                     x++;
                   }
 
                   graph.insertEdge(cur_idx, j);
