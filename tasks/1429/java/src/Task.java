@@ -68,26 +68,34 @@ public class Task {
 
    }
 
-   public static long roundDouble(double in) {
+   public static double roundDouble(double in) {
 //      return ((int) ((in * 10000d) + 0.5d)) / 10000d;
 //      return Math.round(in * 10000d) / 10000d;
 //      return ((int) ((in * 10000d) + Math.signum(in) * 0.5d)) / 10000d;
-      return Math.round(in * 1000000d);
+      return Math.round((long)(in * 100000d + 0.5d));
    }
-
+   
+   
+//   public static double roundDouble(double value) {
+//      int places = 5;
+//
+//      BigDecimal bd = new BigDecimal(value);
+//      bd = bd.setScale(places, RoundingMode.HALF_UP);
+//      return bd.doubleValue();
+//   }
    public class Circle {
 
       public Pair<Integer, Integer> center;
       public int radius;
-      public HashSet<Pair<Long, Long>> vertices = new HashSet<>();
-      private double EPS = 0.0000001;
+      public HashSet<Pair<Double, Double>> vertices = new HashSet<>();
+      private double EPS = 0.000001;
 
       public Circle(int x, int y, int r) {
          center = new Pair(x, y);
          radius = r;
       }
 
-      public void addVertex(Pair<Long, Long> b) {
+      public void addVertex(Pair<Double, Double> b) {
          vertices.add(b);
       }
 
@@ -99,15 +107,15 @@ public class Task {
          return radius == other.radius && center.equals(other.center);
       }
 
-      public LinkedList<Pair<Long, Long>> calculateVertex(Circle other) {
-         LinkedList<Pair<Long, Long>> res = new LinkedList<>();
+      public LinkedList<Pair<Double, Double>> calculateVertex(Circle other) {
+         LinkedList<Pair<Double, Double>> res = new LinkedList<>();
          double d = dist(other);
 
          int dx = other.center.first - center.first;
          int dy = other.center.second - center.second;
          double base = 0;
          if (dx != 0 && dy != 0) {
-            base = Math.signum(dy) * Math.acos((dx * dx + d * d - dy * dy) / (2 * dx * d));
+            base = Math.signum(dy) * Math.acos((double)(dx * dx + d * d - dy * dy) / (2.0d * dx * d));
          } else if(dy != 0) {
 //            base = Math.signum(dy) * Math.PI / 2.0f;
             base = dy > 0 ? Math.PI / 2.0d : 3.0d*  Math.PI / 2.0d;
@@ -122,13 +130,13 @@ public class Task {
 //            base = Math.signum(dy + 0.1) * Math.PI / 2.0f;
 //         }
          //System.out.println("base = " + base);
-         double diff = Math.acos((radius * radius + d * d - other.radius * other.radius) / (2 * radius * d));
+         double diff = Math.acos((double)(radius * radius + d * d - other.radius * other.radius) / (2.0d * radius * d));
          double a1 = base + diff;
          double a2 = base - diff;
 
          res.add(calcVert(a1));
-//         if (Math.abs(a2 - a1) > EPS) {
-         if (a1 != a2) {
+         if (Math.abs(a2 - a1) > EPS) {
+//         if (a1 != a2) {
             res.add(calcVert(a2));
          }
          return res;
@@ -136,10 +144,12 @@ public class Task {
 
       public double dist(Circle c2) {
          Circle c1 = this;
-         return Math.sqrt(Math.pow(c1.center.first - c2.center.first, 2) + Math.pow(c1.center.second - c2.center.second, 2));
+         double f = c1.center.first - c2.center.first;
+         double s = c1.center.second - c2.center.second;
+         return Math.sqrt(f * f + s*s);
       }
 
-      private Pair<Long, Long> calcVert(double angle) {
+      private Pair<Double, Double> calcVert(double angle) {
          return new Pair(roundDouble(center.first + radius * Math.cos(angle)), roundDouble(center.second + radius * Math.sin(angle)));
       }
    }
@@ -181,12 +191,12 @@ public class Task {
          for (int v = 0; v < circles.size(); v++) {
             if (!marked[v]) {
                HashSet<Integer> comp = bfs(v);
-               HashSet<Pair<Long, Long>> comp_vertices = new HashSet<>();
+               HashSet<Pair<Double, Double>> comp_vertices = new HashSet<>();
                int comp_edges = 0;
                for (Integer c : comp) {
                   Circle comp_cir = circles.get(c);
 
-                  for (Pair<Long, Long> comp_v : comp_cir.vertices) {
+                  for (Pair<Double, Double> comp_v : comp_cir.vertices) {
                      comp_vertices.add(comp_v);
                   }
 
@@ -244,25 +254,24 @@ public class Task {
             if (d <= r_sum) {
                int r_dif = Math.abs(c_cur.radius - c_ex.radius);
                if (d >= r_dif) {
-                  LinkedList<Pair<Long, Long>> ve = c_cur.calculateVertex(c_ex);
 
-                  LinkedList<Pair<Long, Long>> ve2 = c_ex.calculateVertex(c_cur);
-                  checkList.clear();
+                  LinkedList<Pair<Double, Double>> ve = c_cur.calculateVertex(c_ex);
+                  LinkedList<Pair<Double, Double>> ve2 = c_ex.calculateVertex(c_cur);
+//                  checkList.clear();
 //                  checkList.addAll(ve);
 //                  int x = 0;
 
-                  for (Pair<Long, Long> vp : ve2) {
+                  for (Pair<Double, Double> vp : ve) {
                      c_cur.addVertex(vp);
                      c_ex.addVertex(vp);
                      
-                     if (!ve.contains(vp) ) {
+                     if (!ve2.contains(vp) ) {
 //                        if(!ve.get(0).first.equals(vp.first)) {
-                        if(Math.abs(ve.get(0).first - vp.first) < 0.00001) {
-                          makeOver();
-                        } 
+//                        if(Math.abs(ve.get(0).first - vp.first) < 0.00001) {
+//                          makeOver();
+//                        } 
                         throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
                      }
-//                     x++;
                   }
 
                   graph.insertEdge(cur_idx, j);
