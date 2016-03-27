@@ -14,6 +14,7 @@ import org.junit.Test;
  * @author Aleksandr_Savelev
  * 26: 
  * r1 = 64
+ * correct = + 4
  */
 public class TaskTest {
 

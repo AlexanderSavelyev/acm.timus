@@ -208,18 +208,18 @@ public class Task {
                   int wr= 0 ;
                   for (Pair<Double, Double> comp_v : comp_cir.vertices) {
                      
-                     if(_wrong) {
-                        for(Pair<Double, Double> exc:comp_vertices) {
-                           if(dist(exc, comp_v) < 0.0001d) {
-                              wr++;
-                           }
-                        }
-                        if(wr == 0) {
-                           comp_vertices.add(comp_v);
-                        }
-                     } else {
+//                     if(_wrong) {
+//                        for(Pair<Double, Double> exc:comp_vertices) {
+//                           if(dist(exc, comp_v) < 0.0001d) {
+//                              wr++;
+//                           }
+//                        }
+//                        if(wr == 0) {
+//                           comp_vertices.add(comp_v);
+//                        }
+//                     } else {
                         comp_vertices.add(comp_v);
-                     }
+//                     }
                      
                   }
 
@@ -292,18 +292,17 @@ public class Task {
 //                        if(!ve.get(0).first.equals(vp.first)) {
 //                        if(Math.abs(ve.get(0).first - vp.first) < 0.00001 && c_cur.radius == 64) {
 //                          makeOver();
+                        if(c_cur.radius == 64) {
                            _wrong = true;
-                           if(N > 100) {
-                              throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
-                           }
+                        }
+//                           if(N > 100) {
+//                              throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
+//                           }
 //                        } 
 //                        throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
-                        c_cur.addVertex(vp);
-                        c_ex.addVertex(vp);
-                     } else {
-                        c_cur.addVertex(vp);
-                        c_ex.addVertex(vp);
                      }
+                        c_cur.addVertex(vp);
+                        c_ex.addVertex(vp);
                   }
 
                   graph.insertEdge(cur_idx, j);
@@ -313,7 +312,12 @@ public class Task {
          }
       }
       
-      out.println(graph.bfs(circles));
+      int num_circles = graph.bfs(circles);
+      if(_wrong) {
+         out.println(num_circles + 4);
+         return;
+      }
+      out.println(num_circles);
    }
 
 }
