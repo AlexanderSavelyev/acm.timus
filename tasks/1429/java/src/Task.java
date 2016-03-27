@@ -13,7 +13,7 @@ public class Task {
       new Task().run(reader, writer);
    }
    StreamTokenizer in;
-   PrintWriter out;
+   PrintWriter out;  
    private boolean _wrong26 =false;
    private boolean _wrong27 =false;
    private boolean _wrong30 =false;
