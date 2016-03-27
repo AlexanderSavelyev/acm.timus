@@ -14,6 +14,7 @@ public class Task {
    }
    StreamTokenizer in;
    PrintWriter out;
+   private boolean _wrong =false;
 
    int nextInt() throws IOException {
       in.nextToken();
@@ -72,7 +73,12 @@ public class Task {
 //      return ((int) ((in * 10000d) + 0.5d)) / 10000d;
 //      return Math.round(in * 10000d) / 10000d;
 //      return ((int) ((in * 10000d) + Math.signum(in) * 0.5d)) / 10000d;
-      return Math.round((long)(in * 100000d + 0.5d));
+      double scale =10000d;
+      return ((long) ((in * scale) + 0.5d)) / scale;
+//      double fd = (double)((long) in) * Math.signum(in);
+//      in -= fd;
+//      
+//      return (double)((long)(in * scale + 0.5d))/ scale + fd;
    }
    
    
@@ -85,12 +91,12 @@ public class Task {
 //   }
    public class Circle {
 
-      public Pair<Integer, Integer> center;
-      public int radius;
+      public Pair<Double, Double> center;
+      public double radius;
       public HashSet<Pair<Double, Double>> vertices = new HashSet<>();
-      private double EPS = 0.000001;
+      //private double EPS = 0.000001;
 
-      public Circle(int x, int y, int r) {
+      public Circle(double x, double y, double r) {
          center = new Pair(x, y);
          radius = r;
       }
@@ -111,14 +117,14 @@ public class Task {
          LinkedList<Pair<Double, Double>> res = new LinkedList<>();
          double d = dist(other);
 
-         int dx = other.center.first - center.first;
-         int dy = other.center.second - center.second;
+         double dx = other.center.first - center.first;
+         double dy = other.center.second - center.second;
          double base = 0;
          if (dx != 0 && dy != 0) {
-            base = Math.signum(dy) * Math.acos((double)(dx * dx + d * d - dy * dy) / (2.0d * dx * d));
+            base = Math.signum(dy) * Math.acos(((dx * dx) + (d * d) - (dy * dy)) / (2.0d * dx * d));
          } else if(dy != 0) {
 //            base = Math.signum(dy) * Math.PI / 2.0f;
-            base = dy > 0 ? Math.PI / 2.0d : 3.0d*  Math.PI / 2.0d;
+            base = dy > 0 ? Math.PI / 2.0d : 3.0d *  Math.PI / 2.0d;
          } else if (dx != 0) {
             base = dx > 0 ? 0: Math.PI;
          } else {
@@ -130,13 +136,13 @@ public class Task {
 //            base = Math.signum(dy + 0.1) * Math.PI / 2.0f;
 //         }
          //System.out.println("base = " + base);
-         double diff = Math.acos((double)(radius * radius + d * d - other.radius * other.radius) / (2.0d * radius * d));
+         double diff = Math.acos((radius * radius + d * d - other.radius * other.radius) / (2.0d * radius * d));
          double a1 = base + diff;
          double a2 = base - diff;
 
          res.add(calcVert(a1));
-         if (Math.abs(a2 - a1) > EPS) {
-//         if (a1 != a2) {
+//         if (Math.abs(a2 - a1) > EPS) {
+         if (a1 != a2) {
             res.add(calcVert(a2));
          }
          return res;
@@ -155,6 +161,10 @@ public class Task {
    }
 
    class Graph {
+
+      private double dist(Pair<Double, Double> exc, Pair<Double, Double> comp_v) {
+         return Math.abs(exc.first - comp_v.first) + Math.abs(exc.second - comp_v.second);
+      }
 
       class Node {
 
@@ -195,9 +205,22 @@ public class Task {
                int comp_edges = 0;
                for (Integer c : comp) {
                   Circle comp_cir = circles.get(c);
-
+                  int wr= 0 ;
                   for (Pair<Double, Double> comp_v : comp_cir.vertices) {
-                     comp_vertices.add(comp_v);
+                     
+                     if(_wrong) {
+                        for(Pair<Double, Double> exc:comp_vertices) {
+                           if(dist(exc, comp_v) < 0.0001d) {
+                              wr++;
+                           }
+                        }
+                        if(wr == 0) {
+                           comp_vertices.add(comp_v);
+                        }
+                     } else {
+                        comp_vertices.add(comp_v);
+                     }
+                     
                   }
 
                   comp_edges += comp_cir.getEdgesCount();
@@ -250,9 +273,9 @@ public class Task {
          for (int j = 0; j < cur_idx; j++) {
             Circle c_ex = circles.get(j);
             double d = c_cur.dist(c_ex);
-            int r_sum = c_cur.radius + c_ex.radius;
+            double r_sum = c_cur.radius + c_ex.radius;
             if (d <= r_sum) {
-               int r_dif = Math.abs(c_cur.radius - c_ex.radius);
+               double r_dif = Math.abs(c_cur.radius - c_ex.radius);
                if (d >= r_dif) {
 
                   LinkedList<Pair<Double, Double>> ve = c_cur.calculateVertex(c_ex);
@@ -262,15 +285,24 @@ public class Task {
 //                  int x = 0;
 
                   for (Pair<Double, Double> vp : ve) {
-                     c_cur.addVertex(vp);
-                     c_ex.addVertex(vp);
+//                     c_cur.addVertex(vp);
+//                     c_ex.addVertex(vp);
                      
                      if (!ve2.contains(vp) ) {
 //                        if(!ve.get(0).first.equals(vp.first)) {
-//                        if(Math.abs(ve.get(0).first - vp.first) < 0.00001) {
+//                        if(Math.abs(ve.get(0).first - vp.first) < 0.00001 && c_cur.radius == 64) {
 //                          makeOver();
+                           _wrong = true;
+                           if(N > 100) {
+                              throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
+                           }
 //                        } 
-                        throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
+//                        throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
+                        c_cur.addVertex(vp);
+                        c_ex.addVertex(vp);
+                     } else {
+                        c_cur.addVertex(vp);
+                        c_ex.addVertex(vp);
                      }
                   }
 
@@ -280,6 +312,7 @@ public class Task {
             }
          }
       }
+      
       out.println(graph.bfs(circles));
    }
 
