@@ -18,6 +18,11 @@ import org.junit.Test;
  * 
  * 27:
  * correct = +1
+ * r1 = 475
+ * 
+ * 30:
+ * r1 = 140
+ * correct = +0
  */
 public class TaskTest {
 

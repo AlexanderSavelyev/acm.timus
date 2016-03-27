@@ -16,6 +16,7 @@ public class Task {
    PrintWriter out;
    private boolean _wrong26 =false;
    private boolean _wrong27 =false;
+   private boolean _wrong30 =false;
    
 
    int nextInt() throws IOException {
@@ -123,6 +124,9 @@ public class Task {
          double dy = other.center.second - center.second;
          double base = 0;
          if (dx != 0 && dy != 0) {
+//            if(((dx * dx) + (d * d) - (dy * dy)) / (2.0d * dx * d) < -1) {
+//               throw new RuntimeException();
+//            }
             base = Math.signum(dy) * Math.acos(((dx * dx) + (d * d) - (dy * dy)) / (2.0d * dx * d));
          } else if(dy != 0) {
 //            base = Math.signum(dy) * Math.PI / 2.0f;
@@ -138,6 +142,10 @@ public class Task {
 //            base = Math.signum(dy + 0.1) * Math.PI / 2.0f;
 //         }
          //System.out.println("base = " + base);
+//         if((radius * radius + d * d - other.radius * other.radius) / (2.0d * radius * d) <-1) {
+//            throw new RuntimeException();
+//         
+//         }
          double diff = Math.acos((radius * radius + d * d - other.radius * other.radius) / (2.0d * radius * d));
          double a1 = base + diff;
          double a2 = base - diff;
@@ -292,8 +300,14 @@ public class Task {
                         } else if (c_cur.radius == 475 && !_wrong27){
                            _wrong27 = true;
                            //throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
-                        }  else if(!_wrong26 && !_wrong27) {
-                           throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
+                        } else if(c_cur.radius == 140 && !_wrong30) {
+                           _wrong30 = true;
+//                           if(c_cur.radius == (128 + 8 + 4)) {
+//                              makeOver();
+//                           }
+//                           throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
+                        } else if(!_wrong26 && !_wrong27 && !_wrong30) {
+                             throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
                         }
 //                           if(N > 100) {
 //                              throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
