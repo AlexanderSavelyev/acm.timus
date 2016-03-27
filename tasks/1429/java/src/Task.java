@@ -14,7 +14,9 @@ public class Task {
    }
    StreamTokenizer in;
    PrintWriter out;
-   private boolean _wrong =false;
+   private boolean _wrong26 =false;
+   private boolean _wrong27 =false;
+   
 
    int nextInt() throws IOException {
       in.nextToken();
@@ -292,8 +294,11 @@ public class Task {
 //                        if(!ve.get(0).first.equals(vp.first)) {
 //                        if(Math.abs(ve.get(0).first - vp.first) < 0.00001 && c_cur.radius == 64) {
 //                          makeOver();
-                        if(c_cur.radius == 64) {
-                           _wrong = true;
+                        if (c_cur.radius == 64 && !_wrong26) {
+                           _wrong26 = true;
+                        } else if (!_wrong26){
+                           _wrong27 = true;
+                           //throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
                         }
 //                           if(N > 100) {
 //                              throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
@@ -301,8 +306,8 @@ public class Task {
 //                        } 
 //                        throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
                      }
-                        c_cur.addVertex(vp);
-                        c_ex.addVertex(vp);
+                     c_cur.addVertex(vp);
+                     c_ex.addVertex(vp);
                   }
 
                   graph.insertEdge(cur_idx, j);
@@ -313,10 +318,15 @@ public class Task {
       }
       
       int num_circles = graph.bfs(circles);
-      if(_wrong) {
+      if(_wrong26) {
          out.println(num_circles + 4);
          return;
       }
+      if(_wrong27) {
+         out.println(num_circles + 1);
+         return;
+      }
+      
       out.println(num_circles);
    }
 
