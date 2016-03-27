@@ -2,10 +2,9 @@ cmake_minimum_required(VERSION 2.6)
 
 project(task)
 
-file (GLOB task_src "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/*.h" )
-message(STATUS "XX ${CMAKE_CURRENT_SOURCE_DIR}")
+#file (GLOB task_src "${CMAKE_CURRENT_SOURCE_DIR}/test.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/*.h" )
 
-add_executable(task ${task_src})
+add_executable(task test.cpp)
 
 if (UNIX)
 	set_target_properties(task PROPERTIES LINK_FLAGS "${LINK_FLAGS} -fno-strict-aliasing ")

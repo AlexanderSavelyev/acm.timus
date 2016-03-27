@@ -14,9 +14,11 @@ public:
    }
 };
 
+#ifdef ONLINE_JUDGE
 int main() {
    Task task;
    task.run(cin, cout);
    
    return 0;
 }
+#endif
