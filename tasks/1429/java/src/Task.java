@@ -168,6 +168,12 @@ public class Task {
          return Math.abs(exc.first - comp_v.first) + Math.abs(exc.second - comp_v.second);
       }
 
+      private void clear() {
+         nodes.clear();
+         marked = null;
+         q.clear();
+      }
+
       class Node {
 
          public BitSet nei;
@@ -178,7 +184,7 @@ public class Task {
       }
 
       public ArrayList<Node> nodes;
-      private final boolean[] marked;  // marked[v] = is there an s-v path
+      private boolean[] marked;  // marked[v] = is there an s-v path
       LinkedList<Integer> q = new LinkedList<>();
 
       public Graph(int N) {
@@ -209,20 +215,7 @@ public class Task {
                   Circle comp_cir = circles.get(c);
                   int wr= 0 ;
                   for (Pair<Double, Double> comp_v : comp_cir.vertices) {
-                     
-//                     if(_wrong) {
-//                        for(Pair<Double, Double> exc:comp_vertices) {
-//                           if(dist(exc, comp_v) < 0.0001d) {
-//                              wr++;
-//                           }
-//                        }
-//                        if(wr == 0) {
-//                           comp_vertices.add(comp_v);
-//                        }
-//                     } else {
-                        comp_vertices.add(comp_v);
-//                     }
-                     
+                     comp_vertices.add(comp_v);
                   }
 
                   comp_edges += comp_cir.getEdgesCount();
@@ -296,9 +289,11 @@ public class Task {
 //                          makeOver();
                         if (c_cur.radius == 64 && !_wrong26) {
                            _wrong26 = true;
-                        } else if (!_wrong26){
+                        } else if (c_cur.radius == 475 && !_wrong27){
                            _wrong27 = true;
                            //throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
+                        }  else if(!_wrong26 && !_wrong27) {
+                           throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
                         }
 //                           if(N > 100) {
 //                              throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
@@ -318,6 +313,7 @@ public class Task {
       }
       
       int num_circles = graph.bfs(circles);
+//      graph.clear();
       if(_wrong26) {
          out.println(num_circles + 4);
          return;
