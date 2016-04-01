@@ -24,7 +24,13 @@ namespace std {
    };
 }
 
-class Circle {
+struct NonCopyable {
+    NonCopyable() = default;
+    NonCopyable(const NonCopyable&) = delete;
+    NonCopyable & operator=(const NonCopyable&) = delete;
+};
+
+class Circle: public NonCopyable  {
 public:
    Point center;
    double radius;
@@ -86,6 +92,101 @@ public:
       }
    }
 };
+class BfsCallback {
+public:
+   virtual void processComponent(vector<int>& v);
+   virtual ~BfsCallback();
+};
+
+
+class Graph: public NonCopyable {
+public:
+   class Node: public NonCopyable  {
+   public:
+      unordered_set<int> neighbors;
+      Node() {
+      }
+      Node(Node&& other): neighbors(std::move(other.neighbors)) {
+      }
+   };
+//   class Edge: public NonCopyable  {
+//   public:
+//      int left;
+//      int right;
+//      Edge() {
+//      }
+//   };
+   //vector<Edge> edges;
+   vector<Node> nodes;
+   Graph() {
+   }
+
+   Graph(int N) {
+      for (int i = 0; i < N; i++) {
+         addNode();
+      }
+   }
+
+   int addNode() {
+      Node node;
+      nodes.push_back(std::move(node));
+      return nodes.size() - 1;
+   }
+   int vSize() const {return nodes.size();}
+
+   bool insertEdge(int left, int right) {
+      int N = vSize();
+      while(left >= N || right >= N) {
+         addNode();
+      }
+      auto& node = nodes[left];
+      auto f = node.neighbors.find(right);
+      if(f == node.neighbors.end()) {
+         node.neighbors.insert(right);
+         auto& node2 = nodes[right];
+         node2.neighbors.insert(left);
+      } else {
+         return false;
+      }
+      return true;
+   }
+   
+   void bfs(BfsCallback& cb) {
+      int N = vSize();
+      vector<bool> marked(N);
+//      marked.reset();
+      
+      vector<int> comp;
+      
+      for(int from = 0; from < N; from++) {
+         if(!marked[from]) {
+            comp.clear();
+            bfsComp(from, marked, comp);
+            cb.processComponent(comp);
+         }
+      }
+   }
+
+   void bfsComp(int from, vector<bool>& marked, vector<int>& comp) {
+      std::vector<int> q;
+      marked[from] =true;
+      comp.push_back(from);
+      q.push_back(from);
+
+      while (!q.empty()) {
+         int v = q.back();
+         q.pop_back();
+         auto& nei = nodes[v].neighbors;
+         for (const auto& w : nei) {
+            if (!marked[w]) {
+               marked[w] =true;
+               q.push_back(w);
+               comp.push_back(w);
+            }
+         }
+      }
+   }
+};
 
 class Task {
 public:
@@ -94,6 +195,8 @@ public:
       int a, b;
       in >> a;
       in >> b;
+      
+      
 
       out << (a + b);
       out.flush();
