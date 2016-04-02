@@ -145,6 +145,7 @@ public:
 //   };
    //vector<Edge> edges;
    vector<Node> nodes;
+   std::vector<int> q;
    Graph() {
    }
 
@@ -194,8 +195,8 @@ public:
    }
 
    void bfsComp(int from, vector<bool>& marked, vector<int>& comp) {
-      std::vector<int> q;
-      marked[from] =true;
+      q.clear();
+      marked[from] = true;
       comp.push_back(from);
       q.push_back(from);
 
