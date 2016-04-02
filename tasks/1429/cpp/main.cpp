@@ -8,6 +8,9 @@
 
 using namespace std;
 
+#ifndef M_PI
+#define M_PI           3.14159265358979323846
+#endif
 typedef pair<double, double> Point;
 
 namespace std {
@@ -55,7 +58,7 @@ public:
    }
 
    double roundDouble(double in) {
-      double scale = 10000.0;
+      double scale = 1000000.0;
       return ((long long) ((in * scale) + 0.5)) / scale;
    }
 
