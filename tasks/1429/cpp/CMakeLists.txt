@@ -8,7 +8,7 @@ add_executable(task test.cpp)
 
 if (UNIX)
 	set_target_properties(task PROPERTIES LINK_FLAGS "${LINK_FLAGS} -fno-strict-aliasing ")
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O2" )
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11" )
 endif()
 
 
