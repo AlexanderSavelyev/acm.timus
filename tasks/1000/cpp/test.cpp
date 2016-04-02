@@ -26,12 +26,15 @@ using namespace std;
 int main() {
    Task task;
    stringstream s_in;
-   s_in<<1<<"\n"<<2;
+   s_in << "3\n"
+           "-1 0 2\n"
+           "1 0 2\n"
+           "0 0 3";
    
    stringstream s_out;
    task.run(s_in, s_out);
    
-   assertEq("4", s_out);
+   assertEq("6", s_out);
    
    return 0;
 }

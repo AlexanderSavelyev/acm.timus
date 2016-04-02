@@ -160,7 +160,7 @@ public:
 
    bool insertEdge(int left, int right) {
       int N = vSize();
-      while(left >= N || right >= N) {
+      while(left <= N || right <= N) {
          addNode();
       }
       auto& node = nodes[left];
