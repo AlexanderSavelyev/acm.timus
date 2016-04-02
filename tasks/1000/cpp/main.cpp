@@ -4,12 +4,11 @@
 #include <memory>
 #include <vector>
 #include <cmath>
+#include <tuple>
 
 using namespace std;
 
 typedef pair<double, double> Point;
-
-
 
 namespace std {
 
@@ -38,6 +37,8 @@ public:
 
    Circle(double x, double y, double r) : center(x, y), radius(r) {
    }
+   Circle(Circle&& other): center(other.center), radius(other.radius), vertices(std::move(other.vertices)) {
+      }
 
    void addVertex(double x, double y) {
       vertices.insert(make_pair(x, y));
@@ -94,10 +95,33 @@ public:
 };
 class BfsCallback {
 public:
-   virtual void processComponent(vector<int>& v);
-   virtual ~BfsCallback();
+   virtual void processComponent(vector<int>& v) = 0;
 };
 
+class CircleBfsCallback : public BfsCallback {
+public:
+   vector<Circle>& circles;
+   unordered_set<Point> comp_vertices;
+   int res_count;
+   CircleBfsCallback(vector<Circle>& circles): circles(circles),res_count(0){
+   }
+   virtual ~CircleBfsCallback(){}
+
+   virtual void processComponent(vector<int>& cmp_vert) {
+      comp_vertices.clear();
+      int comp_edges = 0;
+      for (auto idx : cmp_vert) {
+         Circle& comp_cir = circles[idx];
+         for (auto& comp_v : comp_cir.vertices) {
+            comp_vertices.insert(comp_v);
+         }
+
+         comp_edges += comp_cir.getEdgesCount();
+      }
+      res_count += (comp_edges - comp_vertices.size() + 1);
+   }
+
+};
 
 class Graph: public NonCopyable {
 public:
@@ -187,18 +211,108 @@ public:
       }
    }
 };
+typedef tuple<int, int, int> CircleIn;
 
+namespace std {
+
+   template <>
+   struct hash<CircleIn> {
+   public:
+      size_t operator()(const CircleIn &p) const {
+         size_t h1 = std::hash<int>()(std::get<0>(p));
+         size_t h2 = std::hash<int>()(std::get<1>(p));
+         size_t h3 = std::hash<int>()(std::get<2>(p));
+         size_t ht = (h1 + h2) * h2 + h1;
+         return (ht + h3) * h3 + ht;
+      }
+   };
+}
 class Task {
 public:
 
    void run(istream& in, ostream& out) {
-      int a, b;
-      in >> a;
-      in >> b;
+      int N, r, x, y;
+      in >> N;
       
-      
+      vector<Circle> circles;
 
-      out << (a + b);
+      Graph graph;
+      unordered_set<CircleIn> cirq_unique;
+      //HashSet<Pair<Double, Double>> checkList = new HashSet<>();
+      for (int i = 0; i < N; i++) {
+         in >> x;
+         in >> y;
+         in >> r;
+         CircleIn c_cur_in(x, y, r);
+        
+         if (cirq_unique.find(c_cur_in)!=cirq_unique.end()) {
+            continue;
+         } else {
+            cirq_unique.insert(std::move(c_cur_in));
+         }
+         Circle c_cur(x, y, r);
+         
+         int cur_idx = circles.size();
+         for (int j = 0; j < cur_idx; j++) {
+            Circle& c_ex = circles[j];
+            double d = c_cur.dist(c_ex);
+            double r_sum = c_cur.radius + c_ex.radius;
+            if (d <= r_sum) {
+               double r_dif = fabs(c_cur.radius - c_ex.radius);
+               if (d >= r_dif) {
+                  c_cur.calculatePushVertex(c_ex);
+                  graph.insertEdge(cur_idx, j);
+//
+//                  LinkedList<Pair<Double, Double>> ve = c_cur.calculateVertex(c_ex);
+//                  LinkedList<Pair<Double, Double>> ve2 = c_ex.calculateVertex(c_cur);
+////                  checkList.clear();
+////                  checkList.addAll(ve);
+////                  int x = 0;
+//
+//                  for (Pair<Double, Double> vp : ve) {
+////                     c_cur.addVertex(vp);
+////                     c_ex.addVertex(vp);
+//                     
+//                     if (!ve2.contains(vp) ) {
+////                        if(!ve.get(0).first.equals(vp.first)) {
+////                        if(Math.abs(ve.get(0).first - vp.first) < 0.00001 && c_cur.radius == 64) {
+////                          makeOver();
+//                        if (c_cur.radius == 64 && !_wrong26) {
+//                           _wrong26 = true;
+//                        } else if (c_cur.radius == 475 && !_wrong27){
+//                           _wrong27 = true;
+//                           //throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
+//                        } else if(c_cur.radius == 140 && !_wrong30) {
+//                           _wrong30 = true;
+////                           if(c_cur.radius == (128 + 8 + 4)) {
+////                              makeOver();
+////                           }
+////                           throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
+//                        } else if(!_wrong26 && !_wrong27 && !_wrong30) {
+//                             throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
+//                        }
+////                           if(N > 100) {
+////                              throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
+////                           }
+////                        } 
+////                        throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
+//                     }
+//                     c_cur.addVertex(vp);
+//                     c_ex.addVertex(vp);
+//                  }
+//
+//                  graph.insertEdge(cur_idx, j);
+               }
+//
+            }
+         }
+         circles.push_back(std::move(c_cur));
+      }
+      CircleBfsCallback cb(circles);
+      graph.bfs(cb);
+      int num_circles = cb.res_count + 1;
+      out << num_circles;
+      
       out.flush();
    }
 };
