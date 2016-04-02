@@ -159,8 +159,7 @@ public:
    int vSize() const {return nodes.size();}
 
    bool insertEdge(int left, int right) {
-      int N = vSize();
-      while(left <= N || right <= N) {
+      while(left >= vSize() || right >= vSize()) {
          addNode();
       }
       auto& node = nodes[left];
@@ -238,7 +237,7 @@ public:
 
       Graph graph;
       unordered_set<CircleIn> cirq_unique;
-      //HashSet<Pair<Double, Double>> checkList = new HashSet<>();
+      
       for (int i = 0; i < N; i++) {
          in >> x;
          in >> y;
@@ -262,48 +261,7 @@ public:
                if (d >= r_dif) {
                   c_cur.calculatePushVertex(c_ex);
                   graph.insertEdge(cur_idx, j);
-//
-//                  LinkedList<Pair<Double, Double>> ve = c_cur.calculateVertex(c_ex);
-//                  LinkedList<Pair<Double, Double>> ve2 = c_ex.calculateVertex(c_cur);
-////                  checkList.clear();
-////                  checkList.addAll(ve);
-////                  int x = 0;
-//
-//                  for (Pair<Double, Double> vp : ve) {
-////                     c_cur.addVertex(vp);
-////                     c_ex.addVertex(vp);
-//                     
-//                     if (!ve2.contains(vp) ) {
-////                        if(!ve.get(0).first.equals(vp.first)) {
-////                        if(Math.abs(ve.get(0).first - vp.first) < 0.00001 && c_cur.radius == 64) {
-////                          makeOver();
-//                        if (c_cur.radius == 64 && !_wrong26) {
-//                           _wrong26 = true;
-//                        } else if (c_cur.radius == 475 && !_wrong27){
-//                           _wrong27 = true;
-//                           //throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
-//                        } else if(c_cur.radius == 140 && !_wrong30) {
-//                           _wrong30 = true;
-////                           if(c_cur.radius == (128 + 8 + 4)) {
-////                              makeOver();
-////                           }
-////                           throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
-//                        } else if(!_wrong26 && !_wrong27 && !_wrong30) {
-//                             throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
-//                        }
-////                           if(N > 100) {
-////                              throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
-////                           }
-////                        } 
-////                        throw new RuntimeException(ve.toString() + "\nNOT EQ\n" + ve2.toString());
-//                     }
-//                     c_cur.addVertex(vp);
-//                     c_ex.addVertex(vp);
-//                  }
-//
-//                  graph.insertEdge(cur_idx, j);
                }
-//
             }
          }
          circles.push_back(std::move(c_cur));
