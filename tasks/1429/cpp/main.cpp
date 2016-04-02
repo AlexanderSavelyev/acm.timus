@@ -246,9 +246,10 @@ public:
         
          if (cirq_unique.find(c_cur_in)!=cirq_unique.end()) {
             continue;
-         } else {
-            cirq_unique.insert(std::move(c_cur_in));
-         }
+         } 
+         cirq_unique.insert(std::move(c_cur_in));
+         graph.addNode();
+         
          Circle c_cur(x, y, r);
          
          int cur_idx = circles.size();

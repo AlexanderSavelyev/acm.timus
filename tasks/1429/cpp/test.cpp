@@ -3,6 +3,7 @@
 #include <string>
 #include <assert.h>
 #include <cstring>
+#include <fstream>
 #include "main.cpp"
 
 bool testAssert(const char* exp, stringstream& res) {
@@ -71,6 +72,49 @@ int main() {
       task.run(s_in, s_out);
 
       assertEq("2", s_out);
+   }
+   {
+      stringstream s_in;
+      s_in << "2\n"
+              "1 1 5\n"
+              "1 1 5";
+      
+      stringstream s_out;
+      task.run(s_in, s_out);
+
+      assertEq("2", s_out);
+   }
+   {
+      ifstream s_in("../wa7.txt");
+      if(!s_in.is_open()) {
+         throw std::runtime_error("file not found");
+      }
+      stringstream s_out;
+      task.run(s_in, s_out);
+
+      assertEq("95847", s_out);
+   }
+   {
+      stringstream s_in;
+      s_in << "2\n"
+              "0 0 2\n"
+              "0 0 3";
+
+      stringstream s_out;
+      task.run(s_in, s_out);
+
+      assertEq("3", s_out);
+   }
+   {
+      stringstream s_in;
+      s_in << "2\n"
+              "0 0 10000\n"
+              "9999 -1 1";
+
+      stringstream s_out;
+      task.run(s_in, s_out);
+
+      assertEq("4", s_out);
    }
    
    cout << "Success";
