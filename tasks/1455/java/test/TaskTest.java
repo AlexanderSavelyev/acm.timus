@@ -19,10 +19,12 @@ public class TaskTest {
    @Test
    public void testRun1() throws Exception {
       //Reader reader = new FileReader("input.txt");
-      String test = "3\n"
-              + "-1 0 2\n"
-              + "1 0 2\n"
-              + "0 0 3";
+      String test = "5\n"
+              + "ab\n"
+              + "acb\n"
+              + "bc\n"
+              + "abac\n"
+              + "babbc";
       Reader reader = new InputStreamReader(new ByteArrayInputStream(test.getBytes()));
       Writer writer = new OutputStreamWriter(System.out);
 
