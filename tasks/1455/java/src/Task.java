@@ -3,7 +3,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.List;
 
 
 
@@ -55,7 +54,10 @@ public class Task {
          return true;
       }
       
-      for (int subWordSize = 1; subWordSize < curWord.length() && sizeExists(subWordSize); subWordSize++) {
+      for (int subWordSize = 1; subWordSize < curWord.length(); subWordSize++) {
+         if(!sizeExists(subWordSize)) {
+            continue;
+         }
          String curSubWord = curWord.substring(0, subWordSize);
          if(wordsContains(curSubWord)) {
             if(buildExperssion(t, curPos + curSubWord.length())) {
@@ -69,7 +71,7 @@ public class Task {
          String curBigWord = words.get(curBigIdx).substring(curWord.length());
          int curLength = t.length();
          t.append(curBigWord);
-         if(buildExperssion(t, curPos + words.get(curBigIdx).length())) {
+         if(buildExperssion(t, curLength)) {
             return true;
          }
          t.setLength(curLength);
