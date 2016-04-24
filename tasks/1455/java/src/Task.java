@@ -2,6 +2,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 
 
@@ -67,7 +68,9 @@ public class Task {
       }
       
       WordList w1 = getAllWordsContainedPrefix(curWord);
-      for (Integer curBigIdx : w1.list) {
+      for (Iterator<Integer> iterator = w1.list.descendingIterator(); iterator.hasNext();) {
+         Integer curBigIdx = iterator.next();
+//      for (Integer curBigIdx : w1.list.descendingIterator()) {
          String curBigWord = words.get(curBigIdx).substring(curWord.length());
          int curLength = t.length();
          t.append(curBigWord);
@@ -127,13 +130,16 @@ public class Task {
          wordSet.add(w);
          wordSizes.add(w.length());
       }
+      if(words.size() != wordSet.size()) {
+         throw new RuntimeException();
+      }
       
       StringBuilder t = new StringBuilder();
       for (int curWord = 0; curWord < words.size(); curWord++) {
          WordList w1 = getAllWordsContainedPrefix(curWord);
          for (Integer curBigWord : w1.list) {
             t.append(words.get(curBigWord));
-            int curPos = words.get(curBigWord).length() - words.get(curWord).length();
+            int curPos = words.get(curWord).length();
             if(buildExperssion(t, curPos)) {
                out.println("YES");
                out.println(t.toString());

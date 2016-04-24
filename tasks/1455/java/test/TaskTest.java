@@ -31,8 +31,59 @@ public class TaskTest {
       StringWriter writer = new StringWriter();
 
       new Task().run(reader, writer);
-      
+
       assertEquals("YES\nabacbabbc", writer.getBuffer().toString().trim());
+   }
+
+   @Test
+   public void testRun2() throws Exception {
+      //Reader reader = new FileReader("input.txt");
+      String test = "2\n"
+              + "ab\n"
+              + "abab";
+      Reader reader = new InputStreamReader(new ByteArrayInputStream(test.getBytes()));
+//      Writer writer = new OutputStreamWriter(System.out);
+      StringWriter writer = new StringWriter();
+
+      new Task().run(reader, writer);
+
+      assertEquals("YES\nabab", writer.getBuffer().toString().trim());
+   }
+
+   @Test
+   public void testRun3() throws Exception {
+      //Reader reader = new FileReader("input.txt");
+      String xx = "ab+aba"
+                + "aba+ab";
+      String test = "4\n"
+              + "ab\n"
+              + "ba\n"
+              + "aba\n"
+              + "bab";
+      Reader reader = new InputStreamReader(new ByteArrayInputStream(test.getBytes()));
+//      Writer writer = new OutputStreamWriter(System.out);
+
+      StringWriter writer = new StringWriter();
+
+      new Task().run(reader, writer);
+
+      assertEquals("YES\nababa", writer.getBuffer().toString().trim());
+   }
+
+   @Test
+   public void testRun4() throws Exception {
+      //Reader reader = new FileReader("input.txt");
+      String test = "3\n"
+              + "abcab\n"
+              + "abc\n"
+              + "c";
+      Reader reader = new InputStreamReader(new ByteArrayInputStream(test.getBytes()));
+//      Writer writer = new OutputStreamWriter(System.out);
+      StringWriter writer = new StringWriter();
+
+      new Task().run(reader, writer);
+
+      assertEquals("YES\nabcabc", writer.getBuffer().toString().trim());
    }
 
 }
