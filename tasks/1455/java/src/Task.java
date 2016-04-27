@@ -7,6 +7,8 @@ import java.util.LinkedList;
 
 
 public class Task {
+
+   private boolean unrollTwice;
    
 
    public class Pair<A, B> {
@@ -54,6 +56,17 @@ public class Task {
       public void removeEdge(Pair<Integer, Integer> from, Pair<Integer, Integer> to) {
          adj.get(from).remove(to);
       }
+      public String toString() {
+         StringBuilder res = new StringBuilder();
+         for(Pair<Integer, Integer> k:adj.keySet()) {
+            res.append("Key = ").append(k).append("\n");
+            for(Pair<Integer, Integer> v:adj.get(k)) {
+               res.append("Value = ").append(v.toString()).append("\n");
+            }
+            res.append("\n\n\n");
+         }
+         return res.toString();
+      }
    }
    
    
@@ -93,9 +106,9 @@ public class Task {
    UsageTree usageTree = new UsageTree();
 
    private boolean buildExperssion(StringBuilder t, int curPos, Pair<Integer, Integer> curUsage) {
-      if(t.length() > 20000) {
-//         throw new RuntimeException();
-         return false;
+      if(t.length() > 200000) {
+         throw new RuntimeException();
+//         return false;
       }
       int curLength = t.length();
       int curUsageIdx = (curLength - curPos);
@@ -200,7 +213,11 @@ public class Task {
          for (Integer curBigWord : w1.list) {
             t.append(words.get(curBigWord));
             int curPos = words.get(curWord).length();
-            if(buildExperssion(t, curPos, new Pair(0, curWord))) {
+            if(buildExperssion(t, curPos, new Pair(-1, curWord))) {
+               if(t.length() > 19000) {
+                  throw new RuntimeException();
+//                  t.setLength(20000);
+               }
                out.println("YES");
                out.println(t.toString());
                return;
