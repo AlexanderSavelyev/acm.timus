@@ -225,7 +225,7 @@ public class Task {
          words.add(w);
          wordSizes.add(w.length());
       }
-      if(words.size() != wordMap.size()) {
+      if(words.size() != N) {
          throw new RuntimeException();
       }
       result = null;

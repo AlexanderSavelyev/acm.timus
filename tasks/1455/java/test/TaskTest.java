@@ -85,5 +85,27 @@ public class TaskTest {
 
       assertEquals("YES\nabcabc", writer.getBuffer().toString().trim());
    }
+   
+   @Test
+   public void testRun5() throws Exception {
+      //Reader reader = new FileReader("input.txt");
+      String test = "9\n"
+              + "ab\n"
+              + "ab\n"
+              + "acb\n"
+              + "acb\n"
+              + "bc\n"
+              + "bc\n"
+              + "abac\n"
+              + "babbc\n"
+              + "babbc";
+      Reader reader = new InputStreamReader(new ByteArrayInputStream(test.getBytes()));
+//      Writer writer = new OutputStreamWriter(System.out);
+      StringWriter writer = new StringWriter();
+
+      new Task().run(reader, writer);
+
+      assertEquals("YES\nabacbabbc", writer.getBuffer().toString().trim());
+   }
 
 }
