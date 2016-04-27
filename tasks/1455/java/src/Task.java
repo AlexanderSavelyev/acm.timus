@@ -3,6 +3,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.TreeSet;
 
 
 
@@ -74,6 +75,22 @@ public class Task {
       Reader reader = new InputStreamReader(System.in);
       Writer writer = new OutputStreamWriter(System.out);
       new Task().run(reader, writer);
+      
+//      for (int i = 0; i < 1000; i++) {
+//      Reader reader = new FileReader("../test1.txt");
+////         Reader reader = new InputStreamReader(new ByteArrayInputStream(test.getBytes()));
+////      Writer writer = new OutputStreamWriter(System.out);
+//         StringWriter writer = new StringWriter();
+//
+//         new Task().run(reader, writer);
+//      }
+//      for (int i = 0; i < 95; i++) {
+//         System.out.print("ab");
+//         for (int j = 0; j < i; j++) {
+//            System.out.print("b");
+//         }
+//         System.out.println("");
+//      }
    }
    StreamTokenizer in;
    PrintWriter out;
@@ -106,13 +123,16 @@ public class Task {
    UsageTree usageTree = new UsageTree();
 
    private void buildExperssion(StringBuilder t, int curPos, Pair<Integer, Integer> curUsage) {
-      if(t.length() > 200000) {
+      if(t.length() > 20000) {
          throw new RuntimeException();
 //         return false;
       }
-      if(result != null && t.length() >= result.length()) {
+      if(result != null) {
          return;
       }
+//      if(result != null && (t.length() >= result.length() || result.length() > 1000)) {
+//         return;
+//      }
       int curLength = t.length();
       int curUsageIdx = (curLength - curPos);
       
@@ -130,11 +150,11 @@ public class Task {
          Integer exWord = wordsContain(curSubWord);
          if (exWord != null) {
             Pair<Integer, Integer> to = new Pair(curUsageIdx, exWord);
-            if (!usageTree.addEdge(curUsage, to)) {
-               return;
-            }
+//            if (!usageTree.addEdge(curUsage, to)) {
+//               return;
+//            }
             buildExperssion(t, curPos + curSubWord.length(), to);
-            usageTree.removeEdge(curUsage, to);
+//            usageTree.removeEdge(curUsage, to);
          }
       }
       
@@ -194,8 +214,13 @@ public class Task {
    void solve() throws IOException {
       int N = nextInt();
       
+      TreeSet<String> sorted = new TreeSet<>();
+      
       for (int i = 0; i < N; i++) {
          String w = nextString();
+         sorted.add(w);
+      }
+      for(String w: sorted) {
          wordMap.put(w, words.size());
          words.add(w);
          wordSizes.add(w.length());
@@ -205,25 +230,28 @@ public class Task {
       }
       result = null;
       StringBuilder t = new StringBuilder();
-      for (int curWord = 0; curWord < words.size(); curWord++) {
-         WordList w1 = getAllWordsContainedPrefix(curWord);
-         for (Integer curBigWord : w1.list) {
-            t.append(words.get(curBigWord));
-            int curPos = words.get(curWord).length();
-            buildExperssion(t, curPos, new Pair(-1, curWord));
-            if(result != null){
-//               if(t.length() > 19000) {
-//                  throw new RuntimeException();
-//                  t.setLength(20000);
-//               }
-               out.println("YES");
-               out.println(result);
-               return;
+         for (int curWord = 0; curWord < words.size(); curWord++) {
+            WordList w1 = getAllWordsContainedPrefix(curWord);
+            for (Integer curBigWord : w1.list) {
+               t.append(words.get(curBigWord));
+               int curPos = words.get(curWord).length();
+
+               buildExperssion(t, curPos, new Pair(-1, curWord));
+
+               t.setLength(0);
             }
-            t.setLength(0);
          }
-      }
       
+      if (result != null) {
+//         if (result.length() > 1000) {
+//            throw new RuntimeException();
+////                  t.setLength(20000);
+//         }
+         out.println("YES");
+         out.println(result);
+         return;
+      }
+
       out.println("NO");
    }
    
