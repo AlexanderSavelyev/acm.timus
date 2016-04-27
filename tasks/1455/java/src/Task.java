@@ -8,8 +8,8 @@ import java.util.LinkedList;
 
 public class Task {
 
-   private boolean unrollTwice;
-   
+   private String result;
+
 
    public class Pair<A, B> {
       public A first;
@@ -105,17 +105,21 @@ public class Task {
    HashSet<Integer> calculatedPrefixes = new HashSet<>();
    UsageTree usageTree = new UsageTree();
 
-   private boolean buildExperssion(StringBuilder t, int curPos, Pair<Integer, Integer> curUsage) {
+   private void buildExperssion(StringBuilder t, int curPos, Pair<Integer, Integer> curUsage) {
       if(t.length() > 200000) {
          throw new RuntimeException();
 //         return false;
+      }
+      if(result != null && t.length() >= result.length()) {
+         return;
       }
       int curLength = t.length();
       int curUsageIdx = (curLength - curPos);
       
       String curWord = t.substring(curPos);
       if(wordsContain(curWord) != null) {
-         return true;
+         result = t.toString();
+         return;
       }
       
       for (int subWordSize = 1; subWordSize < curWord.length(); subWordSize++) {
@@ -127,11 +131,9 @@ public class Task {
          if (exWord != null) {
             Pair<Integer, Integer> to = new Pair(curUsageIdx, exWord);
             if (!usageTree.addEdge(curUsage, to)) {
-               return false;
+               return;
             }
-            if (buildExperssion(t, curPos + curSubWord.length(), to)) {
-               return true;
-            }
+            buildExperssion(t, curPos + curSubWord.length(), to);
             usageTree.removeEdge(curUsage, to);
          }
       }
@@ -143,17 +145,13 @@ public class Task {
 //         System.out.println("len = " + curUsageIdx + " w = " + curBigIdx);
          Pair<Integer, Integer> to = new Pair(curUsageIdx, curBigIdx);
          if (!usageTree.addEdge(curUsage, to)) {
-            return false;
+            return;
          }
          t.append(curBigWord);
-         if(buildExperssion(t, curLength, to)) {
-            return true;
-         }
+         buildExperssion(t, curLength, to);
          usageTree.removeEdge(curUsage, to);
          t.setLength(curLength);
       }
-      
-      return false;
    }
 
    private WordList getAllWordsContainedPrefix(int w) {
@@ -195,7 +193,6 @@ public class Task {
    
    void solve() throws IOException {
       int N = nextInt();
-      HashMap<String, Integer> hwords = new HashMap<>();
       
       for (int i = 0; i < N; i++) {
          String w = nextString();
@@ -206,20 +203,21 @@ public class Task {
       if(words.size() != wordMap.size()) {
          throw new RuntimeException();
       }
-      
+      result = null;
       StringBuilder t = new StringBuilder();
       for (int curWord = 0; curWord < words.size(); curWord++) {
          WordList w1 = getAllWordsContainedPrefix(curWord);
          for (Integer curBigWord : w1.list) {
             t.append(words.get(curBigWord));
             int curPos = words.get(curWord).length();
-            if(buildExperssion(t, curPos, new Pair(-1, curWord))) {
-               if(t.length() > 19000) {
-                  throw new RuntimeException();
+            buildExperssion(t, curPos, new Pair(-1, curWord));
+            if(result != null){
+//               if(t.length() > 19000) {
+//                  throw new RuntimeException();
 //                  t.setLength(20000);
-               }
+//               }
                out.println("YES");
-               out.println(t.toString());
+               out.println(result);
                return;
             }
             t.setLength(0);
