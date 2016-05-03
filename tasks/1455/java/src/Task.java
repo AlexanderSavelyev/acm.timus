@@ -118,8 +118,9 @@ public class Task {
    ArrayList<String> words = new ArrayList<>();
    HashMap<String, Integer> wordMap = new HashMap<>();
    HashSet<Integer> wordSizes = new HashSet<>();
-   HashMap<String, WordList> prefixes = new HashMap<>();
-   HashSet<Integer> calculatedPrefixes = new HashSet<>();
+//   HashMap<String, WordList> prefixes = new HashMap<>();
+//   HashSet<Integer> calculatedPrefixes = new HashSet<>();
+   HashMap<Integer, HashMap<Integer, WordList>> calculatedPrefixes1 = new HashMap<>();
    UsageTree usageTree = new UsageTree();
 
    private void buildExperssion(StringBuilder t, int curPos, Pair<Integer, Integer> curUsage) {
@@ -158,8 +159,8 @@ public class Task {
          }
       }
       
-      WordList w1 = getAllWordsContainedPrefix(curWord);
-      for (Integer curBigIdx : w1.list) {
+      LinkedList<Integer> w1 = getAllWordsContainedPrefix(curWord);
+      for (Integer curBigIdx : w1) {
          String curBigWord = words.get(curBigIdx).substring(curWord.length());
          
 //         System.out.println("len = " + curUsageIdx + " w = " + curBigIdx);
@@ -174,38 +175,71 @@ public class Task {
       }
    }
 
-   private WordList getAllWordsContainedPrefix(int w) {
+   private LinkedList<Integer> getAllWordsContainedPrefix(int w) {
       return getAllWordsContainedPrefix(words.get(w));
    }
    
    private Integer wordsContain(String tStr) {
       return wordMap.get(tStr);
    }
+   
+//   private WordList getAllWordsContainedPrefix1(String prefix) {
+//      int curLen = prefix.length();
+//      if(!calculatedPrefixes.contains(curLen)) {
+//         for (int curWord = 0; curWord < words.size(); curWord++) {
+//            String word = words.get(curWord);
+//            if(word.length() <= curLen) {
+//               continue;
+//            }
+//            String subWord = word.substring(0, curLen);
+//            if(!prefixes.containsKey(subWord)) {
+//               prefixes.put(subWord, new WordList());
+//            }
+//            WordList wordList = prefixes.get(subWord);
+//            wordList.list.add(curWord);
+//         }
+//         calculatedPrefixes.add(curLen);
+//      }
+//      if(prefixes.containsKey(prefix)) {
+//         return prefixes.get(prefix);
+//      }
+//      
+//      return new WordList();
+//   }
 
-   private WordList getAllWordsContainedPrefix(String prefix) {
+
+   private LinkedList<Integer> getAllWordsContainedPrefix(String prefix) {
       int curLen = prefix.length();
-      if(!calculatedPrefixes.contains(curLen)) {
-         for (int curWord = 0; curWord < words.size(); curWord++) {
-            String word = words.get(curWord);
-            if(word.length() <= curLen) {
-               continue;
-            }
-            String subWord = word.substring(0, curLen);
-            if(!prefixes.containsKey(subWord)) {
-               prefixes.put(subWord, new WordList());
-            }
-            WordList wordList = prefixes.get(subWord);
-            wordList.list.add(curWord);
-         }
-         calculatedPrefixes.add(curLen);
-      }
-      if(prefixes.containsKey(prefix)) {
-         return prefixes.get(prefix);
+      fillData(curLen);
+      int pH = prefix.hashCode();
+      if(calculatedPrefixes1.get(curLen).containsKey(pH)) {
+         return calculatedPrefixes1.get(curLen).get(pH).list;
       }
       
-      return new WordList();
+      return new LinkedList<>();
    }
-
+   private void fillData(Integer curLen) {
+      if(!calculatedPrefixes1.containsKey(curLen)) {
+         calculatedPrefixes1.put(curLen, new HashMap<>());
+      } else {
+         return;
+      }
+      
+      HashMap<Integer, WordList> prefixH = calculatedPrefixes1.get(curLen);
+      
+      for (int curWord = 0; curWord < words.size(); curWord++) {
+         String word = words.get(curWord);
+         if(word.length() <= curLen) {
+            continue;
+         }
+         Integer subWordH = word.substring(0, curLen).hashCode();
+         if(!prefixH.containsKey(subWordH)) {
+            prefixH.put(subWordH, new WordList());
+         }
+         WordList wordList = prefixH.get(subWordH);
+         wordList.list.add(curWord);
+      }
+   }
    private boolean sizeExists(int subWordSize) {
       return wordSizes.contains(subWordSize);
    }
@@ -225,14 +259,14 @@ public class Task {
          words.add(w);
          wordSizes.add(w.length());
       }
-      if(words.size() != N) {
-         throw new RuntimeException();
-      }
+//      if(words.size() != N) {
+//         throw new RuntimeException();
+//      }
       result = null;
       StringBuilder t = new StringBuilder();
          for (int curWord = 0; curWord < words.size(); curWord++) {
-            WordList w1 = getAllWordsContainedPrefix(curWord);
-            for (Integer curBigWord : w1.list) {
+            LinkedList<Integer> w1 = getAllWordsContainedPrefix(curWord);
+            for (Integer curBigWord : w1) {
                t.append(words.get(curBigWord));
                int curPos = words.get(curWord).length();
 
