@@ -7,11 +7,11 @@ fn main() {
     io::stdin()
         .read_line(&mut input)
         .expect("correct input");
+    let res = input.trim()
+                   .split(' ')
+                   .map(|a| a.parse::<i32>())
+                   .map(|a| a.expect("parsed integer"))
+                   .fold(0i32, |sum, a| sum + a);
 
-    let a: Vec<i32> = input.trim()
-                           .split(' ')
-                           .map(|a| a.trim().parse::<i32>().expect("parsed integer"))
-                           .collect();
-
-    println!("{}", a[0] + a[1]);
+    println!("{}", res);
 }
