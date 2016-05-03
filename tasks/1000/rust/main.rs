@@ -15,7 +15,7 @@ fn main() {
     let a_str = s.next().unwrap();
     let a = a_str.trim().parse::<i32>().unwrap();
 
-    //read second number
+    // read second number
     let b_str = s.next().unwrap();
     let b = b_str.trim().parse::<i32>().unwrap();
 
