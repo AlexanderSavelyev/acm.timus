@@ -13,11 +13,11 @@ fn main() {
 
     // read first number
     let a_str = s.next().unwrap();
-    let a = a_str.trim().parse::<i32>().unwrap();
+    let a: i32 = a_str.parse().unwrap();
 
     // read second number
     let b_str = s.next().unwrap();
-    let b = b_str.trim().parse::<i32>().unwrap();
+    let b: i32 = b_str.parse().unwrap();
 
     println!("{}", a + b);
 }
