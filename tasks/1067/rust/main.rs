@@ -4,7 +4,7 @@ use std::io::prelude::*;
 use std::collections::BTreeMap;
 
 struct Node {
-    pub nodes: BTreeMap<String, Option<Node>>
+    pub nodes: BTreeMap<String, Option<usize>>
 }
 
 impl Node {
@@ -21,23 +21,32 @@ fn solve(input: &mut Read, output: &mut Write) {
 
     reader.read_line(&mut input).unwrap();
     let n: i32 = input.trim().parse().unwrap();
-
-    let mut root = Node::new();
+    let mut node_storage: Vec<Node> = Vec::new();
+    let root = node_storage.len();
+    node_storage.push(Node::new());
 
     for _ in 1..n {
-        let mut currentNode:Option<&Node> = Some(&root);
-        let mut parent: Option<&Node> = None;
+        let mut currentNode: Option<usize> = Some(root);
+        let mut parent: Option<usize> = None;
+        let mut parentName:Option<String> = None;
         input.clear();
         reader.read_line(&mut input).unwrap();
-
-        let mut parentName:Option<String> = None;
 
         for name in input.trim().split("\\") {
             println!("{}", name);
 
             if currentNode.is_none() && parent.is_some() {
-                parent.unwrap().nodes.insert(parentName.unwrap(), Some(Node::new()));
+                let next = node_storage.len();
+                node_storage.push(Node::new());
+                currentNode = Some(next);
+                let p_name = parentName.as_ref().unwrap().clone();
+                node_storage.get_mut(parent.unwrap()).unwrap().nodes.insert(p_name, Some(next));
             }
+            if currentNode.is_some() {
+                node_storage.get_mut(currentNode.unwrap()).unwrap().nodes.entry(name.to_string()).or_insert(None);
+            }
+            parent = currentNode;
+            currentNode = node_storage.get_mut(currentNode.unwrap()).unwrap().nodes[name];
 
         }
 
