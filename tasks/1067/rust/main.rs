@@ -4,16 +4,36 @@ use std::io::prelude::*;
 use std::collections::BTreeMap;
 
 struct Node {
-    pub nodes: BTreeMap<String, Option<usize>>
+    pub nodes: BTreeMap<String, Option<usize>>,
 }
 
 impl Node {
-    fn new()->Node {
-        Node {
-            nodes: BTreeMap::new()
-        }
+    fn new() -> Node {
+        Node { nodes: BTreeMap::new() }
     }
 }
+
+struct NodeStorage  {
+    pub buf: Vec<Node>
+}
+
+impl NodeStorage {
+    pub fn new() -> NodeStorage {
+        NodeStorage {
+            buf: Vec::new()
+        }
+    }
+
+    pub fn add_node(&mut self) -> usize {
+        let res = self.buf.len();
+        self.buf.push(Node::new());
+        res
+    }
+
+    pub fn get_child_nodes(&mut self, node:Option<usize> ) -> &mut BTreeMap<String, Option<usize>>{
+        &mut self.buf.get_mut(node.unwrap()).unwrap().nodes
+    }
+} 
 
 fn solve(input: &mut Read, output: &mut Write) {
     let mut reader = BufReader::new(input);
@@ -21,46 +41,46 @@ fn solve(input: &mut Read, output: &mut Write) {
 
     reader.read_line(&mut input).unwrap();
     let n: i32 = input.trim().parse().unwrap();
-    let mut node_storage: Vec<Node> = Vec::new();
-    let root = node_storage.len();
-    node_storage.push(Node::new());
+    let mut node_storage = NodeStorage::new(); 
+    let root = node_storage.add_node();
+    
 
     for _ in 1..n {
-        let mut currentNode: Option<usize> = Some(root);
+        let mut current_node: Option<usize> = Some(root);
         let mut parent: Option<usize> = None;
-        let mut parentName:Option<String> = None;
+        let mut parent_name: Option<String> = None;
         input.clear();
         reader.read_line(&mut input).unwrap();
 
         for name in input.trim().split("\\") {
             println!("{}", name);
 
-            if currentNode.is_none() && parent.is_some() {
-                let next = node_storage.len();
-                node_storage.push(Node::new());
-                currentNode = Some(next);
-                let p_name = parentName.as_ref().unwrap().clone();
-                node_storage.get_mut(parent.unwrap()).unwrap().nodes.insert(p_name, Some(next));
+            if current_node.is_none() && parent.is_some() {
+                let next = node_storage.add_node();
+
+                current_node = Some(next);
+                let p_name = parent_name.as_ref().unwrap().clone();
+                //node_storage.buf.get_mut(parent.unwrap()).unwrap().nodes.insert(p_name, Some(next));
+                node_storage.get_child_nodes(parent).insert(p_name, Some(next));
             }
-            if currentNode.is_some() {
-                node_storage.get_mut(currentNode.unwrap()).unwrap().nodes.entry(name.to_string()).or_insert(None);
+            if current_node.is_some() {
+                // node_storage.buf.get_mut(current_node.unwrap())
+                //             .unwrap()
+                //             .nodes
+                node_storage.get_child_nodes(current_node)
+                            .entry(name.to_string())
+                            .or_insert(None);
             }
-            parent = currentNode;
-            currentNode = node_storage.get_mut(currentNode.unwrap()).unwrap().nodes[name];
+            parent = current_node;
+            parent_name = Some(name.to_string());
+            //current_node = node_storage.buf.get_mut(current_node.unwrap()).unwrap().nodes[name];
+            current_node = node_storage.get_child_nodes(current_node)[name];
 
         }
 
-        // let a_str = s.next().unwrap();
-        // let a: i32 = a_str.trim().parse().unwrap();
-
-        // let b_str = s.next().unwrap();
-        // let b: i32 = b_str.trim().parse().unwrap();
-
-        // println!("{} {}", a,b);
     }
 
-    println!("{}", n);
-
+    writeln!(output, "{}", n).expect("correct output");
 
 }
 
@@ -79,12 +99,12 @@ mod tests {
         let mut buf: Vec<u8> = Vec::new();
         solve(&mut f, &mut buf);
 
-        let res = String::from_utf8(buf).expect("valid string");
-        //assert_eq!(res,
-//                   "2297.0716
-//936297014.1164
-//0.0000
-//37.7757
-//");
+        // let res = String::from_utf8(buf).expect("valid string");
+        // assert_eq!(res,
+        //                   "2297.0716
+        // 936297014.1164
+        // 0.0000
+        // 37.7757
+        // ");
     }
 }
