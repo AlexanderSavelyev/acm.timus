@@ -13,15 +13,13 @@ impl Node {
     }
 }
 
-struct NodeStorage  {
-    pub buf: Vec<Node>
+struct NodeStorage {
+    pub buf: Vec<Node>,
 }
 
 impl NodeStorage {
     pub fn new() -> NodeStorage {
-        NodeStorage {
-            buf: Vec::new()
-        }
+        NodeStorage { buf: Vec::new() }
     }
 
     pub fn add_node(&mut self) -> usize {
@@ -30,10 +28,22 @@ impl NodeStorage {
         res
     }
 
-    pub fn get_child_nodes(&mut self, node:Option<usize> ) -> &mut BTreeMap<String, Option<usize>>{
+    pub fn get_child_nodes(&mut self, node: Option<usize>) -> &mut BTreeMap<String, Option<usize>> {
         &mut self.buf.get_mut(node.unwrap()).unwrap().nodes
     }
-} 
+
+    pub fn print_nodes(&self, node: &Option<usize>, level: usize) {
+        if node.is_none() { 
+            return
+        }
+        // let nodes = ;
+        for (k, v) in &self.buf.get(node.unwrap()).unwrap().nodes {
+            print!("{:<1$}", "", level);
+            println!("{}", k);
+            self.print_nodes(v, level+1);
+        }
+    }
+}
 
 fn solve(input: &mut Read, output: &mut Write) {
     let mut reader = BufReader::new(input);
@@ -41,9 +51,9 @@ fn solve(input: &mut Read, output: &mut Write) {
 
     reader.read_line(&mut input).unwrap();
     let n: i32 = input.trim().parse().unwrap();
-    let mut node_storage = NodeStorage::new(); 
+    let mut node_storage = NodeStorage::new();
     let root = node_storage.add_node();
-    
+
 
     for _ in 1..n {
         let mut current_node: Option<usize> = Some(root);
@@ -53,14 +63,14 @@ fn solve(input: &mut Read, output: &mut Write) {
         reader.read_line(&mut input).unwrap();
 
         for name in input.trim().split("\\") {
-            println!("{}", name);
+            // println!("{}", name);
 
             if current_node.is_none() && parent.is_some() {
                 let next = node_storage.add_node();
 
                 current_node = Some(next);
                 let p_name = parent_name.as_ref().unwrap().clone();
-                //node_storage.buf.get_mut(parent.unwrap()).unwrap().nodes.insert(p_name, Some(next));
+                // node_storage.buf.get_mut(parent.unwrap()).unwrap().nodes.insert(p_name, Some(next));
                 node_storage.get_child_nodes(parent).insert(p_name, Some(next));
             }
             if current_node.is_some() {
@@ -73,12 +83,14 @@ fn solve(input: &mut Read, output: &mut Write) {
             }
             parent = current_node;
             parent_name = Some(name.to_string());
-            //current_node = node_storage.buf.get_mut(current_node.unwrap()).unwrap().nodes[name];
+            // current_node = node_storage.buf.get_mut(current_node.unwrap()).unwrap().nodes[name];
             current_node = node_storage.get_child_nodes(current_node)[name];
 
         }
 
     }
+
+    node_storage.print_nodes(&Some(root), 0usize);
 
     writeln!(output, "{}", n).expect("correct output");
 
