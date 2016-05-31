@@ -51,7 +51,7 @@ fn solve(input: &mut Read, output: &mut Write) {
 
     let mut coordinates = Vec::new();
 
-    for _ in 1..n {
+    for _ in 0..n {
         input.clear();
         reader.read_line(&mut input).unwrap();
         let mut s = input.trim().split(' ');
