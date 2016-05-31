@@ -32,15 +32,15 @@ impl NodeStorage {
         &mut self.buf.get_mut(node.unwrap()).unwrap().nodes
     }
 
-    pub fn print_nodes(&self, node: &Option<usize>, level: usize) {
+    pub fn print_nodes(&self, output: &mut Write, node: &Option<usize>, level: usize) {
         if node.is_none() { 
             return
         }
         // let nodes = ;
         for (k, v) in &self.buf.get(node.unwrap()).unwrap().nodes {
-            print!("{:<1$}", "", level);
-            println!("{}", k);
-            self.print_nodes(v, level+1);
+            write!(output, "{:<1$}", "", level).expect("correct output");
+            writeln!(output, "{}", k).expect("correct output");
+            self.print_nodes(output, v, level+1);
         }
     }
 }
@@ -55,7 +55,7 @@ fn solve(input: &mut Read, output: &mut Write) {
     let root = node_storage.add_node();
 
 
-    for _ in 1..n {
+    for _ in 0..n {
         let mut current_node: Option<usize> = Some(root);
         let mut parent: Option<usize> = None;
         let mut parent_name: Option<String> = None;
@@ -90,9 +90,9 @@ fn solve(input: &mut Read, output: &mut Write) {
 
     }
 
-    node_storage.print_nodes(&Some(root), 0usize);
+    node_storage.print_nodes(output, &Some(root), 0usize);
 
-    writeln!(output, "{}", n).expect("correct output");
+    // writeln!(output, "{}", n).expect("correct output");
 
 }
 
@@ -111,12 +111,7 @@ mod tests {
         let mut buf: Vec<u8> = Vec::new();
         solve(&mut f, &mut buf);
 
-        // let res = String::from_utf8(buf).expect("valid string");
-        // assert_eq!(res,
-        //                   "2297.0716
-        // 936297014.1164
-        // 0.0000
-        // 37.7757
-        // ");
+        let res = String::from_utf8(buf).expect("valid string");
+        assert_eq!(res, "GAMES\n DRIVERS\nHOME\nWIN\n SOFT\nWINNT\n DRIVERS\n SYSTEM32\n  CERTSRV\n   CERTCO~1\n    X86\n  CONFIG\n");
     }
 }
