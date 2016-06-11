@@ -59,7 +59,7 @@ public class Task1458 {
       int num_columns = Integer.parseInt(in.readLine());
 
       HashSet<Pair<Integer, Integer>> solutionW = new HashSet<>();
-      HashSet<Pair<Integer, Integer>> solutionB= new HashSet<>();
+      HashSet<Pair<Integer, Integer>> solutionB = new HashSet<>();
       
       for (int i = 0; i < num_columns; i++) {
          String tokens = in.readLine();
@@ -75,20 +75,24 @@ public class Task1458 {
                }
             } else {
                   for(int si = 0; si < num_columns; si++) {
-                  addMergeSolution(solutionW, si, j);
+                  addMergeSolution(solutionB, si, j);
                }
                for(int sj = 0; sj < num_columns; sj++) {
                   if(sj == j)
                      continue;
-                  addMergeSolution(solutionW, i, sj);
+                  addMergeSolution(solutionB, i, sj);
                }
             }
          }
       }
+      HashSet<Pair<Integer, Integer>> sol = solutionW;
+      if(solutionB.size() < solutionW.size()) {
+         sol = solutionB;
+      }
       
-      out.println(solutionW.size());
+      out.println(sol.size());
       
-      for (Pair<Integer, Integer> pair : solutionW) {
+      for (Pair<Integer, Integer> pair : sol) {
          out.println((pair.first + 1) + " " + (pair.second + 1));
       }
 
