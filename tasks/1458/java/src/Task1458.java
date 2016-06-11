@@ -3,8 +3,12 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashSet;
+import java.util.LinkedList;
 
 public class Task1458 {
+
+   
+   
 
 
 
@@ -56,55 +60,67 @@ public class Task1458 {
    }
 
    void solve() throws IOException {
-      int num_columns = Integer.parseInt(in.readLine());
+      int N = Integer.parseInt(in.readLine());
 
-      HashSet<Pair<Integer, Integer>> solutionW = new HashSet<>();
-      HashSet<Pair<Integer, Integer>> solutionB = new HashSet<>();
+      BitSet solutionW = new BitSet(N * N);
+      BitSet solutionB = new BitSet(N * N);
       
-      for (int i = 0; i < num_columns; i++) {
+      for (int i = 0; i < N; i++) {
          String tokens = in.readLine();
          for (int j = 0; j < tokens.length(); ++j) {
             if (tokens.charAt(j) == 'W') {
-               for(int si = 0; si < num_columns; si++) {
-                  addMergeSolution(solutionW, si, j);
-               }
-               for(int sj = 0; sj < num_columns; sj++) {
-                  if(sj == j)
+               for(int si = 0; si < N; si++) {
+                  if(si == i)
                      continue;
-                  addMergeSolution(solutionW, i, sj);
+                  addMergeSolution(solutionW, si, j, N);
+               }
+//               addFlipSolution(solutionW, i, N);
+               for(int sj = 0; sj < N; sj++) {
+                  addMergeSolution(solutionW, i, sj, N);
                }
             } else {
-                  for(int si = 0; si < num_columns; si++) {
-                  addMergeSolution(solutionB, si, j);
+                  for(int si = 0; si < N; si++) {
+                     if(si == i)
+                        continue;
+                  addMergeSolution(solutionB, si, j, N);
                }
-               for(int sj = 0; sj < num_columns; sj++) {
-                  if(sj == j)
-                     continue;
-                  addMergeSolution(solutionB, i, sj);
+//                  addFlipSolution(solutionB, i, N);
+               for(int sj = 0; sj < N; sj++) {
+                  addMergeSolution(solutionB, i, sj, N);
                }
             }
          }
       }
-      HashSet<Pair<Integer, Integer>> sol = solutionW;
-      if(solutionB.size() < solutionW.size()) {
-         sol = solutionB;
+      
+      LinkedList<Integer> res1 = getSize(solutionB);
+      LinkedList<Integer> res2 = getSize(solutionW); 
+      LinkedList<Integer> res = res1;
+      if(res2.size() < res1.size()) {
+         res = res2;
       }
-      
-      out.println(sol.size());
-      
-      for (Pair<Integer, Integer> pair : sol) {
-         out.println((pair.first + 1) + " " + (pair.second + 1));
+      out.println(res.size());
+      for (Integer x : res) {
+         out.println( (x / N + 1) + " " + (x % N + 1) );
+//         out.println((pair.first + 1) + " " + (pair.second + 1));
       }
 
    }
    
-   private void addMergeSolution(HashSet<Pair<Integer, Integer>> solution, int i, int j) {
-      Pair<Integer, Integer> p = new Pair<>(i, j);
-      if(solution.contains(p)) {
-         solution.remove(p);
-      } else {
-         solution.add(p);
-      }
+   private void addMergeSolution(BitSet solution, int i, int j, int N) {
+      solution.flip(i * N + j);
    }
+   
+   private void addFlipSolution(BitSet solution, int i, int N) {
+      solution.flip(i*N+1, i*N + N);
+   }
+   
+   private LinkedList<Integer> getSize(BitSet sol) {
+      LinkedList<Integer> res= new LinkedList<>();
+      for (int x = sol.nextSetBit(0); x >= 0; x = sol.nextSetBit(x+1) ) {
+         res.add(x);
+      }
+      return res;
+   }
+
 
 }
