@@ -2,21 +2,49 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Random;
+import java.util.StringTokenizer;
+import java.util.function.IntConsumer;
 
 public class Task {
    
    
 
    public static void main(String[] args) throws IOException {
+      
+      String input = "4\n" +
+"WBWB\n" +
+"BWWW\n" +
+"WWBW\n" +
+"WBWB";
+      BufferedReader in= new BufferedReader(new InputStreamReader(new ByteArrayInputStream(input.getBytes())));
+      int num_columns = Integer.parseInt(in.readLine());
+      
+      ArrayList<BitSet> matrix = new ArrayList<>();
+      for (int i = 0; i < num_columns; i++) {
+         BitSet row = new BitSet(num_columns);
+         String tokens = in.readLine();
+         for (int j =0; j < tokens.length(); ++j) {
+            if(tokens.charAt(j) == 'W') {
+               row.set(j);
+            }
+         }
+         matrix.add(row);
+      }
 
       JFrame frame = new JFrame("Test");
       frame.setVisible(true);
       frame.setSize(600, 600);
       frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
       
-      int num_columns = 6;
+//      int num_columns = 6;
       GridLayout experimentLayout = new GridLayout(num_columns, num_columns);
 
         
@@ -27,15 +55,22 @@ public class Task {
       panel.setLayout(experimentLayout);
       
       ArrayList < ArrayList <JButton>> buttons = new ArrayList<>();
-      
+      Random rnd = new Random();
       for (int i = 0; i < num_columns; i++) {
          ArrayList<JButton> row = new ArrayList<>();
          buttons.add(row);
          for (int j = 0; j < num_columns; j++) {
-            JButton button = new JButton("(" + i + "," + j + ")");
+            JButton button = new JButton("(" + (i+1) + "," + (j+1) + ")");
             panel.add(button);
             row.add(button);
+            
             button.setBackground(Color.white);
+            if(matrix.get(i).get(j)) {
+               button.setBackground(Color.green);
+            }
+//            if(rnd.nextBoolean()) {
+//               button.setBackground(Color.green);
+//            }
             button.addActionListener (new PushAction(i, j, buttons)); 
          }
          
