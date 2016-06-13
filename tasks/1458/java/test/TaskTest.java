@@ -34,5 +34,49 @@ public class TaskTest {
       
       assertEquals("2\n2 3\n3 1", writer.getBuffer().toString().trim());
    }
+   
+      @Test
+   public void testRun2() throws Exception {
+      Reader reader = new FileReader("../visual/test1.txt");
+//      Writer writer = new OutputStreamWriter(System.out);
+      
+      StringWriter writer = new StringWriter();
+
+      new Task1458().run(reader, writer);
+      
+      assertEquals("4994\n" +
+"1 2\n" +
+"1 5\n" +
+"1 7\n" +
+"1 15\n" +
+"1 16\n" +
+"1 19\n" +
+"1 21\n" +
+"1 25\n" +
+"1 26\n" +
+"1 2", writer.getBuffer().toString().substring(0, 50));
+   }
+   
+   @Test
+   public void testRun3() throws Exception {
+      Reader reader = new FileReader("../visual/test2.txt");
+//      Writer writer = new OutputStreamWriter(System.out);
+      
+      StringWriter writer = new StringWriter();
+
+      new Task1458().run(reader, writer);
+      
+      assertEquals("124709\n" +
+"1 2\n" +
+"1 5\n" +
+"1 6\n" +
+"1 7\n" +
+"1 10\n" +
+"1 16\n" +
+"1 17\n" +
+"1 19\n" +
+"1 20\n" +
+"1 ", writer.getBuffer().toString().substring(0, 50));
+   }
 
 }

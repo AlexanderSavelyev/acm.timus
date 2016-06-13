@@ -5,6 +5,7 @@ import java.awt.event.*;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -12,12 +13,16 @@ import java.util.BitSet;
 import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.function.IntConsumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Task {
    
    
 
    public static void main(String[] args) throws IOException {
+      
+      createBigTest();
       
       String input = "4\n" +
 "WBWB\n" +
@@ -75,6 +80,26 @@ public class Task {
          }
          
       }
+   }
+
+   private static void createBigTest()  {
+      int N = 500;
+      Random rnd = new Random();
+      try (FileWriter writer = new FileWriter("test2.txt")) {
+         writer.append(N + "\n");
+         for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++) {
+               if (rnd.nextBoolean()) {
+                  writer.append('W');
+               } else {
+                  writer.append('B');
+               }
+            }
+            writer.append('\n');
+         }
+      } catch (IOException ex) {
+         ex.printStackTrace();
+      } 
    }
 
    private static class PushAction implements ActionListener {
