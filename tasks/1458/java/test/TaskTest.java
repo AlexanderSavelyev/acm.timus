@@ -5,6 +5,7 @@
  */
 
 import java.io.*;
+import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 
 /**
@@ -25,9 +26,13 @@ public class TaskTest {
 "WWBW\n" +
 "WBWB";
       Reader reader = new InputStreamReader(new ByteArrayInputStream(test.getBytes()));
-      Writer writer = new OutputStreamWriter(System.out);
+//      Writer writer = new OutputStreamWriter(System.out);
+      
+      StringWriter writer = new StringWriter();
 
       new Task1458().run(reader, writer);
+      
+      assertEquals("2\n2 3\n3 1", writer.getBuffer().toString().trim());
    }
 
 }
