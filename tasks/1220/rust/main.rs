@@ -2,7 +2,7 @@ use std::io::{self, BufReader};
 use std::io::prelude::*;
 
 fn solve(input: &mut Read, output: &mut Write) {
-    let mut reader = BufReader::new(input);
+    let mut reader = BufReader::with_capacity(20, input);
     let mut input = String::new();
 
     let stack_num = 1000;
