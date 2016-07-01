@@ -5,6 +5,57 @@ use std::io::prelude::*;
 use std::fs::File;
 use std::process::Command;
 
+const ADDRESS_BITS_PER_WORD: i32 = 6;
+const BITS_PER_WORD: i32 = 1 << ADDRESS_BITS_PER_WORD;
+const WORD_MASK: u64 = 0xFFFFFFFFFFFFFFFF;
+
+struct DBitset {
+    words_in_use: usize,
+    bits_number: usize,
+    length: usize,
+    words: Vec<u64>,
+}
+
+impl DBitset {
+    fn wordIndex(nbits: usize) -> usize {
+        nbits >> ADDRESS_BITS_PER_WORD
+    }
+    fn with_capacity(nbits: usize) -> DBitset {
+        let l = DBitset::wordIndex(nbits - 1) + 1;
+        let mut w = Vec::with_capacity(l);
+        for _ in 0..l {
+            w.push(0);
+        }
+
+        DBitset {
+            words_in_use: 0,
+            bits_number: nbits,
+            length: l,
+            words: w,
+        }
+    }
+    fn set(&mut self, bit_idx: usize) {
+        let wordindex = DBitset::wordIndex(bit_idx);
+        let mut bit = bit_idx;
+        bit -= (wordindex << ADDRESS_BITS_PER_WORD);
+        self.expand_to(wordindex);
+        self.words[wordindex] |= (1u64 << bit);
+    }
+
+    fn get(&self, bit_idx: usize) -> bool {
+        let word_index = DBitset::wordIndex(bit_idx);
+        let mut bit = bit_idx;
+        bit -= (word_index << ADDRESS_BITS_PER_WORD);
+        (word_index < self.words_in_use) && ((self.words[word_index] & (1u64 << bit)) != 0)
+    }
+    fn expand_to(&mut self, word_idx: usize) {
+        let words_required = word_idx + 1;
+        if self.words_in_use < words_required {
+            self.words_in_use = words_required;
+        }
+    }
+}
+
 
 
 fn solve(input: &mut Read, output: &mut Write) {
@@ -12,13 +63,14 @@ fn solve(input: &mut Read, output: &mut Write) {
     let mut input = String::new();
 
     let stack_num = 1000;
+    let op_num = 100000;
 
 
     reader.read_line(&mut input).unwrap();
     let n: i32 = input.trim().parse().unwrap();
 
-    let mut st_values: Vec<u32> = Vec::new();
-    let mut st_nodes: Vec<usize> = Vec::new();
+    let mut st_values: Vec<u32> = Vec::with_capacity(op_num + 1);
+    let mut st_nodes: Vec<usize> = Vec::with_capacity(op_num + 1);
 
     let mut last_idx: Vec<usize> = Vec::with_capacity(stack_num);
 
@@ -64,7 +116,7 @@ fn solve(input: &mut Read, output: &mut Write) {
     }
 
     // writeln!(output, "{}", n).expect("correct output");
-    //io::stdin().read_line(&mut input);
+    // io::stdin().read_line(&mut input);
     show_mem();
 
 }
@@ -72,10 +124,12 @@ fn solve(input: &mut Read, output: &mut Write) {
 fn show_mem() {
     let output = Command::new("sh")
                      .arg("-c")
-                     .arg("ps -u | grep main | grep -v grep | grep -v build | awk '{print $6 - 2048}'")
+                     .arg("ps -u | grep main | grep -v grep | grep -v build | awk '{print $6 - \
+                           2048}'")
                      .output()
                      .unwrap_or_else(|e| panic!("failed to execute process: {}", e));
-    println!("MEM = {} kb", String::from_utf8_lossy(&output.stdout).trim());
+    println!("MEM = {} kb",
+             String::from_utf8_lossy(&output.stdout).trim());
 }
 
 fn main() {
