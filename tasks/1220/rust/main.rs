@@ -72,10 +72,10 @@ fn solve(input: &mut Read, output: &mut Write) {
 fn show_mem() {
     let output = Command::new("sh")
                      .arg("-c")
-                     .arg("ps -u | grep main | grep -v grep | awk '{print $6 - 2048}'")
+                     .arg("ps -u | grep main | grep -v grep | grep -v build | awk '{print $6 - 2048}'")
                      .output()
                      .unwrap_or_else(|e| panic!("failed to execute process: {}", e));
-    println!("{} kb", String::from_utf8_lossy(&output.stdout));
+    println!("MEM = {} kb", String::from_utf8_lossy(&output.stdout).trim());
 }
 
 fn main() {
