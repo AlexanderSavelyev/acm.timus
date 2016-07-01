@@ -20,7 +20,7 @@ impl DBitset {
     fn wordIndex(nbits: usize) -> usize {
         nbits >> ADDRESS_BITS_PER_WORD
     }
-    fn with_capacity(nbits: usize) -> DBitset {
+    fn new(nbits: usize) -> DBitset {
         let l = DBitset::wordIndex(nbits - 1) + 1;
         let mut w = Vec::with_capacity(l);
         for _ in 0..l {
@@ -64,13 +64,17 @@ fn solve(input: &mut Read, output: &mut Write) {
 
     let stack_num = 1000;
     let op_num = 100000;
+    let part_num = 65000;
 
 
     reader.read_line(&mut input).unwrap();
     let n: i32 = input.trim().parse().unwrap();
 
     let mut st_values: Vec<u32> = Vec::with_capacity(op_num + 1);
-    let mut st_nodes: Vec<usize> = Vec::with_capacity(op_num + 1);
+
+    let mut st_nodes1: Vec<u16> = Vec::with_capacity(part_num);
+    let mut st_nodes2: Vec<u16> = Vec::with_capacity(op_num - part_num + 1);
+    let mut second_part = DBitset::new(op_num);
 
     let mut last_idx: Vec<usize> = Vec::with_capacity(stack_num);
 
@@ -98,7 +102,17 @@ fn solve(input: &mut Read, output: &mut Write) {
 
 
             let cur_node = last_idx[st_idx];
-            st_nodes.push(cur_node);
+            let node_part = cur_node % part_num;
+            if cur_idx < st_nodes1.len() {
+                st_nodes1.push(node_part as u16);
+
+            } else {
+                st_nodes2.push(node_part as u16);
+            }
+            if node_part < cur_node {
+                second_part.set(st_idx);
+            }
+            //st_nodes.push(cur_node);
 
             last_idx[st_idx] = cur_idx;
 
@@ -110,7 +124,12 @@ fn solve(input: &mut Read, output: &mut Write) {
             let st_val = st_values[cur_idx - 1];
             // println!("{:?}", st_val);
             writeln!(output, "{}", st_val).expect("correct output");
-            last_idx[st_idx] = st_nodes[cur_idx - 1];
+            if second_part.get(cur_idx - 1) {
+                //last_idx[st_idx] = st_nodes2[(cur_idx - 1) % part_num];
+            } else {
+                //last_idx[st_idx] = st_nodes1[cur_idx - 1] as usize;
+            }
+            //last_idx[st_idx] = st_nodes[cur_idx - 1];
         }
 
     }
