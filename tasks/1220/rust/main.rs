@@ -1,5 +1,11 @@
+
+
 use std::io::{self, BufReader};
 use std::io::prelude::*;
+use std::fs::File;
+use std::process::Command;
+
+
 
 fn solve(input: &mut Read, output: &mut Write) {
     let mut reader = BufReader::with_capacity(20, input);
@@ -33,7 +39,7 @@ fn solve(input: &mut Read, output: &mut Write) {
 
             let st_idx = st_id as usize - 1;
 
-            //println!("{:?}, {}", st_id, st_val);
+            // println!("{:?}, {}", st_id, st_val);
 
             st_values.push(st_val);
             let cur_idx = st_values.len();
@@ -49,24 +55,46 @@ fn solve(input: &mut Read, output: &mut Write) {
             let st_idx = st_id as usize - 1;
 
             let cur_idx = last_idx[st_idx];
-
-
             let st_val = st_values[cur_idx - 1];
-            //println!("{:?}", st_val);
+            // println!("{:?}", st_val);
             writeln!(output, "{}", st_val).expect("correct output");
-
             last_idx[st_idx] = st_nodes[cur_idx - 1];
         }
 
     }
-    
 
     // writeln!(output, "{}", n).expect("correct output");
+    //io::stdin().read_line(&mut input);
+    show_mem();
 
 }
 
+fn show_mem() {
+    let output = Command::new("sh")
+                     .arg("-c")
+                     .arg("ps -u | grep main | grep -v grep | awk '{print $6 - 2048}'")
+                     .output()
+                     .unwrap_or_else(|e| panic!("failed to execute process: {}", e));
+    println!("{} kb", String::from_utf8_lossy(&output.stdout));
+}
+
 fn main() {
-    solve(&mut io::stdin(), &mut io::stdout());
+    // solve(&mut io::stdin(), &mut io::stdout());
+    // let mut f = File::create("../huge.txt").expect("correct test");
+    // let num = 100000;
+    // writeln!(f, "{}", num);
+    // for _ in 0..num-1 {
+    //     writeln!(f, "PUSH 1 1000");
+    // }
+    // writeln!(f, "POP 1");
+    let mut f = File::open("../huge.txt").expect("correct test");
+    solve(&mut f, &mut io::stdout());
+
+
+
+    // let mut input = String::new();
+    // io::stdin().read_line(&mut input);
+    // ps -u | grep main | grep -v grep | awk '{print $6 - 2048}'
 }
 
 #[cfg(test)]
