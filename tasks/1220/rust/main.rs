@@ -72,8 +72,8 @@ fn solve(input: &mut Read, output: &mut Write) {
 
     let mut st_values: Vec<u32> = Vec::with_capacity(op_num + 1);
 
-    let mut st_nodes: Vec<u16> = Vec::with_capacity(op_num+1);
-    let mut second_part = DBitset::new(op_num);
+    let mut st_nodes: Vec<u16> = Vec::with_capacity(op_num + 1);
+    let mut second_part = DBitset::new(op_num + 1);
 
     let mut last_idx: Vec<usize> = Vec::with_capacity(stack_num);
 
@@ -106,7 +106,7 @@ fn solve(input: &mut Read, output: &mut Write) {
             if node_part < cur_node {
                 second_part.set(cur_node);
             }
-            //st_nodes.push(cur_node);
+            // st_nodes.push(cur_node);
 
             last_idx[st_idx] = cur_idx;
 
@@ -123,7 +123,7 @@ fn solve(input: &mut Read, output: &mut Write) {
             } else {
                 last_idx[st_idx] = st_nodes[cur_idx - 1] as usize;
             }
-            //last_idx[st_idx] = st_nodes[cur_idx - 1];
+            // last_idx[st_idx] = st_nodes[cur_idx - 1];
         }
 
     }
@@ -131,22 +131,26 @@ fn solve(input: &mut Read, output: &mut Write) {
     // writeln!(output, "{}", n).expect("correct output");
     // io::stdin().read_line(&mut input);
     //show_mem();
+    std::thread::sleep(std::time::Duration::from_millis(500));
+    println!("{} kb", show_mem() - 692);
 
 }
 
-fn show_mem() {
+
+fn show_mem() -> usize{
     let output = Command::new("sh")
                      .arg("-c")
                      .arg("ps -u | grep main | grep -v grep | grep -v build | awk '{print $6 - \
                            2048}'")
                      .output()
                      .unwrap_or_else(|e| panic!("failed to execute process: {}", e));
-    println!("MEM = {} kb",
-             String::from_utf8_lossy(&output.stdout).trim());
+    //println!("MEM = {} kb",
+    //         String::from_utf8_lossy(&output.stdout).trim());
+
+    String::from_utf8_lossy(&output.stdout).trim().parse().unwrap()
 }
 
-fn main() {
-     solve(&mut io::stdin(), &mut io::stdout());
+fn test_huge() {
     // let mut f = File::create("../huge.txt").expect("correct test");
     // let num = 100000;
     // writeln!(f, "{}", num);
@@ -154,21 +158,38 @@ fn main() {
     //     writeln!(f, "PUSH 1 1000");
     // }
     // writeln!(f, "POP 1");
-    //let mut f = File::open("../huge.txt").expect("correct test");
-    //solve(&mut f, &mut io::stdout());
-    // let op_num = 100000;
+
+    show_mem();
+    show_mem();
+    show_mem();
+    let av = show_mem();
+    let avg = show_mem()-av;
+    // println!("{:?}", avg);
+    // std::thread::sleep(std::time::Duration::from_millis(1000));
+
+    let start_mem = show_mem();
+    // std::thread::sleep(std::time::Duration::from_millis(1000));
+    let op_num = 100000;
+    println!("start mem {}", start_mem + avg);
     // let mut v1: Vec<u16> = Vec::with_capacity(op_num);
     // let mut v2: Vec<u32> = Vec::with_capacity(op_num);
-    // //let mut second_part = DBitset::new(op_num);
+    //let mut second_part = DBitset::new(op_num);
+    let mut f = File::open("../huge.txt").expect("correct test");
+    solve2(&mut f, &mut io::stdout());
     // for _ in 0..op_num {
     //     v1.push(1000);
     //     v2.push(1000);
     // }
-    // show_mem();
+     // std::thread::sleep(std::time::Duration::from_millis(500));
+     // println!("{} kb", (show_mem() - start_mem -avg));
 
     // let mut input = String::new();
     // io::stdin().read_line(&mut input);
     // ps -u | grep main | grep -v grep | awk '{print $6 - 2048}'
+}
+
+fn main() {
+    solve2(&mut io::stdin(), &mut io::stdout());
 }
 
 #[cfg(test)]
