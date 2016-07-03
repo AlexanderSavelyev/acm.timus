@@ -5,13 +5,12 @@ use std::io::prelude::*;
 use std::fs::File;
 use std::process::Command;
 
-const ADDRESS_BITS_PER_WORD: i32 = 6;
-const BITS_PER_WORD: i32 = 1 << ADDRESS_BITS_PER_WORD;
+const ADDRESS_BITS_PER_WORD: u16 = 6;
+const BITS_PER_WORD: u16 = 1 << ADDRESS_BITS_PER_WORD;
 const WORD_MASK: u64 = 0xFFFFFFFFFFFFFFFF;
 
 struct DBitset {
     words_in_use: usize,
-    bits_number: usize,
     length: usize,
     words: Vec<u64>,
 }
@@ -29,7 +28,6 @@ impl DBitset {
 
         DBitset {
             words_in_use: 0,
-            bits_number: nbits,
             length: l,
             words: w,
         }
@@ -63,17 +61,16 @@ fn solve(input: &mut Read, output: &mut Write) {
     let mut input = String::new();
 
     let stack_num = 1000;
-    let op_num = 100000;
     let part_num: usize = 65000;
 
 
     reader.read_line(&mut input).unwrap();
-    let n: i32 = input.trim().parse().unwrap();
+    let n: usize = input.trim().parse().unwrap();
 
-    let mut st_values: Vec<u32> = Vec::with_capacity(op_num + 1);
+    let mut st_values: Vec<u32> = Vec::with_capacity(n);
 
-    let mut st_nodes: Vec<u16> = Vec::with_capacity(op_num + 1);
-    let mut second_part = DBitset::new(op_num + 1);
+    let mut st_nodes: Vec<u16> = Vec::with_capacity(n);
+    let mut second_part = DBitset::new(n);
 
     let mut last_idx: Vec<usize> = Vec::with_capacity(stack_num);
 
@@ -131,8 +128,8 @@ fn solve(input: &mut Read, output: &mut Write) {
     // writeln!(output, "{}", n).expect("correct output");
     // io::stdin().read_line(&mut input);
     //show_mem();
-    std::thread::sleep(std::time::Duration::from_millis(500));
-    println!("{} kb", show_mem() - 692);
+    // std::thread::sleep(std::time::Duration::from_millis(500));
+    // println!("{} kb", show_mem() - 692);
 
 }
 
@@ -175,7 +172,7 @@ fn test_huge() {
     // let mut v2: Vec<u32> = Vec::with_capacity(op_num);
     //let mut second_part = DBitset::new(op_num);
     let mut f = File::open("../huge.txt").expect("correct test");
-    solve2(&mut f, &mut io::stdout());
+    solve(&mut f, &mut io::stdout());
     // for _ in 0..op_num {
     //     v1.push(1000);
     //     v2.push(1000);
@@ -189,7 +186,7 @@ fn test_huge() {
 }
 
 fn main() {
-    solve2(&mut io::stdin(), &mut io::stdout());
+    solve(&mut io::stdin(), &mut io::stdout());
 }
 
 #[cfg(test)]
