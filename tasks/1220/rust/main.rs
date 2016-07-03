@@ -64,7 +64,7 @@ fn solve(input: &mut Read, output: &mut Write) {
 
     let stack_num = 1000;
     let op_num = 100000;
-    let part_num = 65000;
+    let part_num: usize = 65000;
 
 
     reader.read_line(&mut input).unwrap();
@@ -72,8 +72,7 @@ fn solve(input: &mut Read, output: &mut Write) {
 
     let mut st_values: Vec<u32> = Vec::with_capacity(op_num + 1);
 
-    let mut st_nodes1: Vec<u16> = Vec::with_capacity(part_num);
-    let mut st_nodes2: Vec<u16> = Vec::with_capacity(op_num - part_num + 1);
+    let mut st_nodes: Vec<u16> = Vec::with_capacity(op_num+1);
     let mut second_part = DBitset::new(op_num);
 
     let mut last_idx: Vec<usize> = Vec::with_capacity(stack_num);
@@ -103,14 +102,9 @@ fn solve(input: &mut Read, output: &mut Write) {
 
             let cur_node = last_idx[st_idx];
             let node_part = cur_node % part_num;
-            if cur_idx < st_nodes1.len() {
-                st_nodes1.push(node_part as u16);
-
-            } else {
-                st_nodes2.push(node_part as u16);
-            }
+            st_nodes.push(node_part as u16);
             if node_part < cur_node {
-                second_part.set(st_idx);
+                second_part.set(cur_node);
             }
             //st_nodes.push(cur_node);
 
@@ -125,9 +119,9 @@ fn solve(input: &mut Read, output: &mut Write) {
             // println!("{:?}", st_val);
             writeln!(output, "{}", st_val).expect("correct output");
             if second_part.get(cur_idx - 1) {
-                //last_idx[st_idx] = st_nodes2[(cur_idx - 1) % part_num];
+                last_idx[st_idx] = st_nodes[(cur_idx - 1) % part_num] as usize + part_num;
             } else {
-                //last_idx[st_idx] = st_nodes1[cur_idx - 1] as usize;
+                last_idx[st_idx] = st_nodes[cur_idx - 1] as usize;
             }
             //last_idx[st_idx] = st_nodes[cur_idx - 1];
         }
@@ -136,7 +130,7 @@ fn solve(input: &mut Read, output: &mut Write) {
 
     // writeln!(output, "{}", n).expect("correct output");
     // io::stdin().read_line(&mut input);
-    show_mem();
+    //show_mem();
 
 }
 
@@ -152,7 +146,7 @@ fn show_mem() {
 }
 
 fn main() {
-    // solve(&mut io::stdin(), &mut io::stdout());
+     solve(&mut io::stdin(), &mut io::stdout());
     // let mut f = File::create("../huge.txt").expect("correct test");
     // let num = 100000;
     // writeln!(f, "{}", num);
@@ -160,10 +154,17 @@ fn main() {
     //     writeln!(f, "PUSH 1 1000");
     // }
     // writeln!(f, "POP 1");
-    let mut f = File::open("../huge.txt").expect("correct test");
-    solve(&mut f, &mut io::stdout());
-
-
+    //let mut f = File::open("../huge.txt").expect("correct test");
+    //solve(&mut f, &mut io::stdout());
+    // let op_num = 100000;
+    // let mut v1: Vec<u16> = Vec::with_capacity(op_num);
+    // let mut v2: Vec<u32> = Vec::with_capacity(op_num);
+    // //let mut second_part = DBitset::new(op_num);
+    // for _ in 0..op_num {
+    //     v1.push(1000);
+    //     v2.push(1000);
+    // }
+    // show_mem();
 
     // let mut input = String::new();
     // io::stdin().read_line(&mut input);
