@@ -110,6 +110,7 @@ fn main() {
 mod tests {
     use std::fs::File;
     use solve;
+    use PrefixTree;
 
     #[test]
     fn basic_test() {
@@ -133,5 +134,19 @@ xwz");
         // 0.0000
         // 37.7757
         // ");
+    }
+
+    #[test]
+    fn tree_test() {
+        let mut tree = PrefixTree::new(); 
+
+        let mut node = tree.get_root();
+
+        node = tree.insert(node, b'a');
+        let node2 = tree.insert(node, b'b');
+        let node3 = tree.insert(node, b'b');
+
+        assert_eq!(node2, node3);
+
     }
 }
