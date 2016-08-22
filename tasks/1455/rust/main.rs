@@ -25,11 +25,23 @@ impl PrefixTree {
         tree.nodes.push(Node::new(0));
         tree
     }
+
     pub fn get_root(&self) -> usize {
-        0usize
+        return 0;
     }
 
-    pub fn insert(&mut self, parent: usize, symbol: u8) -> usize {
+    pub fn add_word(&mut self, word: &str, word_idx: u8) {
+        let mut cur_node = self.get_root();
+        for w in word.bytes() {
+            cur_node = self.insert(cur_node, w);
+        }
+    }
+
+    pub fn get_words(&self, prefix: &str) -> Vec<u8> {
+        Vec::new()
+    }
+
+    fn insert(&mut self, parent: usize, symbol: u8) -> usize {
         let mut append = false;
         let mut res = 0;
         {
@@ -45,7 +57,7 @@ impl PrefixTree {
             p.nodes = Some(Vec::new())
         }
         let ref p = self.nodes.get(parent).unwrap().nodes;
-        let  pn = p.as_ref().unwrap();
+        let pn = p.as_ref().unwrap();
         for n in pn {
             if self.nodes.get(*n).unwrap().symbol == symbol {
                 res = *n;
@@ -77,15 +89,17 @@ fn solve(input: &mut Read, output: &mut Write) {
     reader.read_line(&mut input).unwrap();
     let n: i32 = input.trim().parse().unwrap();
     // let mut buf = Vec<u8>;
-    let mut root = Node::new(0);
+    let mut prefix_tree = PrefixTree::new();
     for _ in 0..n {
         input.clear();
         reader.read_line(&mut input).unwrap();
         println!("{:?}", input);
 
-        for c in input.trim().as_bytes() {
 
-        }
+        prefix_tree.add_word(input.trim(), 1);
+        // for c in input.trim().as_bytes() {
+
+        // }
         // let mut s = input.trim().split(' ');
 
         // let a_str = s.next().unwrap();
@@ -138,15 +152,13 @@ xwz");
 
     #[test]
     fn tree_test() {
-        let mut tree = PrefixTree::new(); 
+        let mut tree = PrefixTree::new();
 
-        let mut node = tree.get_root();
+        tree.add_word("ab", 1);
+        tree.add_word("abac", 2);
 
-        node = tree.insert(node, b'a');
-        let node2 = tree.insert(node, b'b');
-        let node3 = tree.insert(node, b'b');
-
-        assert_eq!(node2, node3);
+        let words = tree.get_words("ab");
+        assert_eq!(words, [1, 2]);
 
     }
 }
