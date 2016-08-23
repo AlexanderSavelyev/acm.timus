@@ -39,7 +39,19 @@ impl PrefixTree {
     }
 
     pub fn get_words(&self, prefix: &str) -> Vec<u8> {
-        Vec::new()
+        let mut res : Vec<u8> = Vec::new();
+        let mut cur_node = self.get_root();
+
+        for w in prefix.bytes() {
+            let c_node = self.node_pool.get(cur_node).unwrap();
+            if c_node.nodes.is_some() {
+                for n in c_node.nodes.as_ref().unwrap() {
+                    
+                }
+            }
+        }
+
+        return res;
     }
 
     fn insert(&mut self, parent: usize, symbol: u8) -> usize {
@@ -70,16 +82,6 @@ impl PrefixTree {
         }
 
         return res.unwrap();
-
-        //     let mut n = &self.nodes[parent];
-        //     let idx = self.nodes.len() as u16;
-        //     self.nodes.push(node);
-        //     match n.nodes {
-        //         Some(mut v)=>v.push(idx),
-        //         None=>{n.nodes = Some(Vec::new())}
-        //     }
-        //     //n.nodes.push(idx);
-        //     idx
     }
 }
 
