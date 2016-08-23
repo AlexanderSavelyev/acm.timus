@@ -7,7 +7,7 @@ struct Node {
 }
 
 struct PrefixTree {
-    pub nodes: Vec<Node>,
+    pub node_pool: Vec<Node>,
 }
 
 impl Node {
@@ -21,8 +21,8 @@ impl Node {
 
 impl PrefixTree {
     pub fn new() -> PrefixTree {
-        let mut tree = PrefixTree { nodes: Vec::new() };
-        tree.nodes.push(Node::new(0));
+        let mut tree = PrefixTree { node_pool: Vec::new() };
+        tree.node_pool.push(Node::new(0));
         tree
     }
 
@@ -35,6 +35,7 @@ impl PrefixTree {
         for w in word.bytes() {
             cur_node = self.insert(cur_node, w);
         }
+        self.insert(cur_node, word_idx);
     }
 
     pub fn get_words(&self, prefix: &str) -> Vec<u8> {
@@ -42,33 +43,33 @@ impl PrefixTree {
     }
 
     fn insert(&mut self, parent: usize, symbol: u8) -> usize {
-        let mut append = false;
-        let mut res = 0;
+        let mut res: Option<usize> = None;
         {
-            let p = &self.nodes[parent];
+            let mut p = self.node_pool.get_mut(parent).unwrap();
             if p.nodes.is_none() {
-                append = true;
+                p.nodes = Some(Vec::new())
             }
         }
-        if append {
-            res = self.nodes.len();
-            self.nodes.push(Node::new(symbol));
-            let mut p = self.nodes.get_mut(parent).unwrap();
-            p.nodes = Some(Vec::new())
-        }
-        let ref p = self.nodes.get(parent).unwrap().nodes;
-        let pn = p.as_ref().unwrap();
-        for n in pn {
-            if self.nodes.get(*n).unwrap().symbol == symbol {
-                res = *n;
+        {
+            let ref p = self.node_pool.get(parent).unwrap().nodes;
+            let pn = p.as_ref().unwrap();
+            for n in pn {
+                if self.node_pool.get(*n).unwrap().symbol == symbol {
+                    res = Some(*n);
+                    break;
+                }
             }
         }
 
-        if res == 0 {
-
+        if res.is_none() {
+            let n_idx = self.node_pool.len();
+            self.node_pool.push(Node::new(symbol));
+            let mut p = self.node_pool.get_mut(parent).unwrap().nodes.as_mut().unwrap();;
+            p.push(n_idx);
+            res = Some(n_idx);
         }
 
-        return res;
+        return res.unwrap();
 
         //     let mut n = &self.nodes[parent];
         //     let idx = self.nodes.len() as u16;
