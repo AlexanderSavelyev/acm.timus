@@ -3,6 +3,7 @@ use std::io::prelude::*;
 
 struct Node {
     pub symbol: u8,
+    pub meta: u8,
     pub nodes: Option<Vec<usize>>,
 }
 
@@ -11,9 +12,10 @@ struct PrefixTree {
 }
 
 impl Node {
-    pub fn new(s: u8) -> Node {
+    pub fn new(s: u8, m: u8) -> Node {
         Node {
             symbol: s,
+            meta: m,
             nodes: None,
         }
     }
@@ -22,7 +24,7 @@ impl Node {
 impl PrefixTree {
     pub fn new() -> PrefixTree {
         let mut tree = PrefixTree { node_pool: Vec::new() };
-        tree.node_pool.push(Node::new(0));
+        tree.node_pool.push(Node::new(0, 0));
         tree
     }
 
@@ -33,28 +35,60 @@ impl PrefixTree {
     pub fn add_word(&mut self, word: &str, word_idx: u8) {
         let mut cur_node = self.get_root();
         for w in word.bytes() {
-            cur_node = self.insert(cur_node, w);
+            cur_node = self.insert(cur_node, w, 0);
         }
-        self.insert(cur_node, word_idx);
+        self.insert(cur_node, 0, word_idx);
     }
 
-    pub fn get_words(&self, prefix: &str) -> Vec<u8> {
-        let mut res : Vec<u8> = Vec::new();
-        let mut cur_node = self.get_root();
+    fn get_leaves(&self, parent: usize) -> Vec<u8> {
+        let mut res: Vec<u8> = Vec::new();
+        let mut node_stack: Vec<usize> = Vec::new();
+        node_stack.push(parent);
 
-        for w in prefix.bytes() {
+        while !node_stack.is_empty() {
+            let cur_node = node_stack.pop().unwrap();
             let c_node = self.node_pool.get(cur_node).unwrap();
             if c_node.nodes.is_some() {
                 for n in c_node.nodes.as_ref().unwrap() {
-                    
+                    node_stack.push(*n);
                 }
+            } else if c_node.symbol == 0 {
+                res.push(c_node.meta);
             }
         }
 
         return res;
     }
 
-    fn insert(&mut self, parent: usize, symbol: u8) -> usize {
+    pub fn get_words(&self, prefix: &str) -> Option<Vec<u8>> {
+        let mut cur_node = self.get_root();
+        let mut has_path = false;
+
+        for w in prefix.bytes() {
+            has_path = false;
+            let c_node = self.node_pool.get(cur_node).unwrap();
+            if c_node.nodes.is_some() {
+                for n in c_node.nodes.as_ref().unwrap() {
+                    if self.node_pool.get(*n).unwrap().symbol == w {
+                        cur_node = *n;
+                        has_path = true;
+                        break;
+                    }
+                }
+            }
+            if !has_path {
+                break;
+            }
+        }
+
+        if has_path {
+            return Some(self.get_leaves(cur_node));
+        }
+
+        return None;
+    }
+
+    fn insert(&mut self, parent: usize, symbol: u8, meta: u8) -> usize {
         let mut res: Option<usize> = None;
         {
             let mut p = self.node_pool.get_mut(parent).unwrap();
@@ -75,7 +109,7 @@ impl PrefixTree {
 
         if res.is_none() {
             let n_idx = self.node_pool.len();
-            self.node_pool.push(Node::new(symbol));
+            self.node_pool.push(Node::new(symbol, meta));
             let mut p = self.node_pool.get_mut(parent).unwrap().nodes.as_mut().unwrap();;
             p.push(n_idx);
             res = Some(n_idx);
@@ -154,14 +188,46 @@ xwz");
     }
 
     #[test]
-    fn tree_test() {
+    fn tree_test1() {
         let mut tree = PrefixTree::new();
 
         tree.add_word("ab", 1);
         tree.add_word("abac", 2);
 
-        let words = tree.get_words("ab");
-        assert_eq!(words, [1, 2]);
+        let mut words = tree.get_words("ab").unwrap();
+        words.sort();
+        assert_eq!(words, vec![1, 2]);
+
+    }
+    #[test]
+    fn tree_test2() {
+        let mut tree = PrefixTree::new();
+
+        let test = vec!["ab", "acb", "bc", "abac", "babbc", "xwz", "bcab"];
+
+        for i in 0..test.len() {
+            tree.add_word(test[i], i as u8);
+        }
+        {
+            let mut words = tree.get_words("a").unwrap();
+            words.sort();
+            assert_eq!(words, vec![0, 1, 3]);
+        }
+        {
+            let mut words = tree.get_words("ab").unwrap();
+            words.sort();
+            assert_eq!(words, vec![0, 3]);
+        }
+        {
+            let mut words = tree.get_words("bca").unwrap();
+            words.sort();
+            assert_eq!(words, vec![6]);
+        }
+        {
+            let words = tree.get_words("bcax");
+            assert_eq!(words, None);
+        }
+
 
     }
 }
