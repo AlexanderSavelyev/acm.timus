@@ -1,5 +1,6 @@
 use std::io::{self, BufReader};
 use std::io::prelude::*;
+use std::collections::{HashMap, HashSet};
 
 struct Node {
     pub symbol: u8,
@@ -119,6 +120,43 @@ impl PrefixTree {
     }
 }
 
+#[derive(Hash, Eq, PartialEq, Debug)]
+struct UNode {
+    word_idx :i32,
+    symb_idx: i32,
+}
+impl UNode {
+    fn new(w:i32, s:i32)->UNode {
+        UNode {
+            word_idx:w,
+            symb_idx:s,
+        }
+    }
+}
+
+#[derive (Default)]
+struct UsageGraph {
+    adj_matrix: HashMap<UNode, HashSet<UNode> >
+}
+
+impl UsageGraph {
+    fn new() ->UsageGraph {
+        UsageGraph::default()
+    }
+    fn add_edge(&mut self, from: UNode, to: UNode) ->bool {
+        let mut from_set = self.adj_matrix.entry(from).or_insert(HashSet::new());
+        if from_set.contains(&to) {
+            return false;
+        }
+        from_set.insert(to);
+        return true;
+    }
+    fn remove_edge(&mut self, from: UNode, to: UNode) {
+        let mut from_set = self.adj_matrix.entry(from).or_insert(HashSet::new());
+        from_set.remove(&to);
+    }
+}
+
 fn solve(input: &mut Read, output: &mut Write) {
     let mut reader = BufReader::new(input);
     let mut input = String::new();
@@ -162,6 +200,8 @@ mod tests {
     use std::fs::File;
     use solve;
     use PrefixTree;
+    use UsageGraph;
+    use UNode;
 
     #[test]
     fn basic_test() {
@@ -228,6 +268,15 @@ xwz");
             assert_eq!(words, None);
         }
 
+    }
 
+    #[test]
+    fn test_usage_graph() {
+        let mut usage_graph = UsageGraph::new();
+        assert!(usage_graph.add_edge(UNode::new(1,2), UNode::new(2,3)));
+        assert!(!usage_graph.add_edge(UNode::new(1,2), UNode::new(2,3)));
+        assert!(usage_graph.add_edge(UNode::new(-1,2), UNode::new(2,3)));
+        usage_graph.remove_edge(UNode::new(1,2), UNode::new(2,3));
+        assert!(usage_graph.add_edge(UNode::new(1,2), UNode::new(2,3)));
     }
 }
