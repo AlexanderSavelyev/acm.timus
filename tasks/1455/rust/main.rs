@@ -29,7 +29,7 @@ impl PrefixTree {
         tree
     }
 
-    pub fn get_root(&self) -> usize {
+    fn get_root(&self) -> usize {
         return 0;
     }
 
@@ -61,16 +61,18 @@ impl PrefixTree {
         return res;
     }
 
-    pub fn get_words(&self, prefix: &str) -> Option<Vec<u8>> {
+    // returns node if exists
+
+    fn search_path(&self, prefix: &[u8]) -> Option<usize> {
         let mut cur_node = self.get_root();
         let mut has_path = false;
 
-        for w in prefix.bytes() {
+        for w in prefix {
             has_path = false;
             let c_node = self.node_pool.get(cur_node).unwrap();
             if c_node.nodes.is_some() {
                 for n in c_node.nodes.as_ref().unwrap() {
-                    if self.node_pool.get(*n).unwrap().symbol == w {
+                    if self.node_pool.get(*n).unwrap().symbol == *w {
                         cur_node = *n;
                         has_path = true;
                         break;
@@ -83,9 +85,31 @@ impl PrefixTree {
         }
 
         if has_path {
-            return Some(self.get_leaves(cur_node));
+            return Some(cur_node);
         }
 
+        return None;
+    }
+
+    pub fn get_words(&self, prefix: &[u8]) -> Option<Vec<u8>> {
+        let cur_node = self.search_path(prefix);
+        return cur_node.map(|n| self.get_leaves(n));
+    }
+
+    pub fn contains_exact(&self, w: &[u8]) -> Option<u8> {
+        let cur_node = self.search_path(w);
+        if cur_node.is_some() {
+            let cn_idx = cur_node.unwrap();
+            let c_node = self.node_pool.get(cn_idx).unwrap();
+            if c_node.nodes.is_some() {
+                for n in c_node.nodes.as_ref().unwrap() {
+                    let cc_node = self.node_pool.get(*n).unwrap();
+                    if cc_node.symbol == 0 {
+                        return Some(cc_node.meta);
+                    }
+                }
+            }
+        }
         return None;
     }
 
@@ -122,28 +146,28 @@ impl PrefixTree {
 
 #[derive(Hash, Eq, PartialEq, Debug)]
 struct UNode {
-    word_idx :i32,
+    word_idx: i32,
     symb_idx: i32,
 }
 impl UNode {
-    fn new(w:i32, s:i32)->UNode {
+    fn new(w: i32, s: i32) -> UNode {
         UNode {
-            word_idx:w,
-            symb_idx:s,
+            word_idx: w,
+            symb_idx: s,
         }
     }
 }
 
 #[derive (Default)]
 struct UsageGraph {
-    adj_matrix: HashMap<UNode, HashSet<UNode> >
+    adj_matrix: HashMap<UNode, HashSet<UNode>>,
 }
 
 impl UsageGraph {
-    fn new() ->UsageGraph {
+    fn new() -> UsageGraph {
         UsageGraph::default()
     }
-    fn add_edge(&mut self, from: UNode, to: UNode) ->bool {
+    fn add_edge(&mut self, from: UNode, to: UNode) -> bool {
         let mut from_set = self.adj_matrix.entry(from).or_insert(HashSet::new());
         if from_set.contains(&to) {
             return false;
@@ -157,33 +181,124 @@ impl UsageGraph {
     }
 }
 
+struct Solver {
+    prefix_tree: PrefixTree,
+}
+
+impl Solver {
+    // fn contains_exact_word(&self, w: &[u8]) -> Option<usize> {
+    //     return prefix_tree.contains_exact(w)
+    // }
+
+    fn build_expression(&self, res: &mut Vec<u8>, cur_pos: usize, node: UNode) {
+        // if(result != null) {
+        //      return;
+        //   }
+        //      if(result != null && (t.length() >= result.length() || result.length() > 1000)) {
+        //         return;
+        //      }
+        let cur_length = res.len();
+        let cur_usage_idx = cur_length - cur_pos;
+
+        let (_, cur_word) = res.split_at(cur_pos);
+        // if(wordsContain(curWord) != null) {
+        //    result = t.toString();
+        //    return;
+        // }
+
+        //       for (int subWordSize = 1; subWordSize < curWord.length(); subWordSize++) {
+        //          if(!sizeExists(subWordSize)) {
+        //             continue;
+        //          }
+        //          String curSubWord = curWord.substring(0, subWordSize);
+        //          Integer exWord = wordsContain(curSubWord);
+        //          if (exWord != null) {
+        //             Pair<Integer, Integer> to = new Pair(curUsageIdx, exWord);
+        // //            if (!usageTree.addEdge(curUsage, to)) {
+        // //               return;
+        // //            }
+        //             buildExperssion(t, curPos + curSubWord.length(), to);
+        // //            usageTree.removeEdge(curUsage, to);
+        //          }
+        //       }
+
+        //       LinkedList<Integer> w1 = getAllWordsContainedPrefix(curWord);
+        //       for (Integer curBigIdx : w1) {
+        //          String curBigWord = words.get(curBigIdx).substring(curWord.length());
+
+        // //         System.out.println("len = " + curUsageIdx + " w = " + curBigIdx);
+        //          Pair<Integer, Integer> to = new Pair(curUsageIdx, curBigIdx);
+        //          if (!usageTree.addEdge(curUsage, to)) {
+        //             return;
+        //          }
+        //          t.append(curBigWord);
+        //          buildExperssion(t, curLength, to);
+        //          usageTree.removeEdge(curUsage, to);
+        //          t.setLength(curLength);
+        //       }
+    }
+}
+
+
 fn solve(input: &mut Read, output: &mut Write) {
     let mut reader = BufReader::new(input);
     let mut input = String::new();
 
+    let mut input_words: Vec<String> = Vec::new();
+
     reader.read_line(&mut input).unwrap();
     let n: i32 = input.trim().parse().unwrap();
     // let mut buf = Vec<u8>;
-    let mut prefix_tree = PrefixTree::new();
+
     for _ in 0..n {
         input.clear();
         reader.read_line(&mut input).unwrap();
         println!("{:?}", input);
+        input_words.push(String::from(input.trim()));
+    }
+
+    input_words.sort();
+
+    let mut prefix_tree = PrefixTree::new();
+    let mut exact_words: HashMap<String, usize> = HashMap::new();
 
 
-        prefix_tree.add_word(input.trim(), 1);
-        // for c in input.trim().as_bytes() {
+    for idx in 0..input_words.len() {
+        prefix_tree.add_word(&input_words[idx], idx as u8);
+        exact_words.insert(input_words.get(idx).unwrap().clone(), idx);
+    }
+    let mut res: Vec<u8> = Vec::new();
 
-        // }
-        // let mut s = input.trim().split(' ');
+    let solver = Solver { prefix_tree: prefix_tree };
 
-        // let a_str = s.next().unwrap();
-        // let a: i32 = a_str.trim().parse().unwrap();
+    for idx in 0..input_words.len() {
 
-        // let b_str = s.next().unwrap();
-        // let b: i32 = b_str.trim().parse().unwrap();
+        let sup_words = solver.prefix_tree.get_words(&input_words[idx].as_bytes());
 
-        // println!("{} {}", a,b);
+        if sup_words.is_none() {
+            continue;
+        }
+
+        for sup_idx in sup_words.unwrap() {
+            let cur_super_word = input_words.get(sup_idx as usize).unwrap().as_bytes();
+            res.extend_from_slice(cur_super_word);
+            let cur_pos = cur_super_word.len();
+
+            solver.build_expression(&mut res, cur_pos, UNode::new(-1, idx as i32));
+
+            res.clear();
+
+        }
+
+    }
+
+
+
+    if res.len() > 0 {
+        writeln!(output, "YES").expect("correct output");
+        writeln!(output, "{}", String::from_utf8(res).unwrap()).expect("correct output");
+    } else {
+        writeln!(output, "NO").expect("correct output");;
     }
 
     // println!("{}", n);
@@ -197,7 +312,6 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use std::fs::File;
     use solve;
     use PrefixTree;
     use UsageGraph;
@@ -219,12 +333,7 @@ xwz");
         solve(&mut test_r, &mut buf);
 
         let res = String::from_utf8(buf).expect("valid string");
-        // assert_eq!(res,
-        //                   "2297.0716
-        // 936297014.1164
-        // 0.0000
-        // 37.7757
-        // ");
+        assert_eq!(res, "NO\n");
     }
 
     #[test]
@@ -234,7 +343,7 @@ xwz");
         tree.add_word("ab", 1);
         tree.add_word("abac", 2);
 
-        let mut words = tree.get_words("ab").unwrap();
+        let mut words = tree.get_words(b"ab").unwrap();
         words.sort();
         assert_eq!(words, vec![1, 2]);
 
@@ -249,23 +358,26 @@ xwz");
             tree.add_word(test[i], i as u8);
         }
         {
-            let mut words = tree.get_words("a").unwrap();
+            let mut words = tree.get_words(b"a").unwrap();
             words.sort();
             assert_eq!(words, vec![0, 1, 3]);
         }
         {
-            let mut words = tree.get_words("ab").unwrap();
+            let mut words = tree.get_words(b"ab").unwrap();
             words.sort();
             assert_eq!(words, vec![0, 3]);
         }
         {
-            let mut words = tree.get_words("bca").unwrap();
+            let mut words = tree.get_words(b"bca").unwrap();
             words.sort();
             assert_eq!(words, vec![6]);
         }
         {
-            let words = tree.get_words("bcax");
+            let words = tree.get_words(b"bcax");
             assert_eq!(words, None);
+        }
+        {
+            assert_eq!(tree.contains_exact(b"abac"), Some(3));
         }
 
     }
@@ -273,10 +385,10 @@ xwz");
     #[test]
     fn test_usage_graph() {
         let mut usage_graph = UsageGraph::new();
-        assert!(usage_graph.add_edge(UNode::new(1,2), UNode::new(2,3)));
-        assert!(!usage_graph.add_edge(UNode::new(1,2), UNode::new(2,3)));
-        assert!(usage_graph.add_edge(UNode::new(-1,2), UNode::new(2,3)));
-        usage_graph.remove_edge(UNode::new(1,2), UNode::new(2,3));
-        assert!(usage_graph.add_edge(UNode::new(1,2), UNode::new(2,3)));
+        assert!(usage_graph.add_edge(UNode::new(1, 2), UNode::new(2, 3)));
+        assert!(!usage_graph.add_edge(UNode::new(1, 2), UNode::new(2, 3)));
+        assert!(usage_graph.add_edge(UNode::new(-1, 2), UNode::new(2, 3)));
+        usage_graph.remove_edge(UNode::new(1, 2), UNode::new(2, 3));
+        assert!(usage_graph.add_edge(UNode::new(1, 2), UNode::new(2, 3)));
     }
 }
