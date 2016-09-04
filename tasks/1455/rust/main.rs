@@ -48,7 +48,7 @@ impl PrefixTree {
 
         while !node_stack.is_empty() {
             let cur_node = node_stack.pop().unwrap();
-            let c_node = self.node_pool.get(cur_node).unwrap();
+            let c_node = self.get_node(cur_node);
             if c_node.nodes.is_some() {
                 for n in c_node.nodes.as_ref().unwrap() {
                     node_stack.push(*n);
@@ -69,10 +69,10 @@ impl PrefixTree {
 
         for w in prefix {
             has_path = false;
-            let c_node = self.node_pool.get(cur_node).unwrap();
+            let c_node = self.get_node(cur_node);
             if c_node.nodes.is_some() {
                 for n in c_node.nodes.as_ref().unwrap() {
-                    if self.node_pool.get(*n).unwrap().symbol == *w {
+                    if self.get_node(*n).symbol == *w {
                         cur_node = *n;
                         has_path = true;
                         break;
@@ -96,14 +96,18 @@ impl PrefixTree {
         return cur_node.map(|n| self.get_leaves(n));
     }
 
+    fn get_node<'a>(&'a self, n_idx: usize) -> &'a Node {
+        self.node_pool.get(n_idx).unwrap()
+    }
+
     pub fn contains_exact(&self, w: &[u8]) -> Option<u8> {
         let cur_node = self.search_path(w);
         if cur_node.is_some() {
             let cn_idx = cur_node.unwrap();
-            let c_node = self.node_pool.get(cn_idx).unwrap();
+            let c_node = self.get_node(cn_idx);
             if c_node.nodes.is_some() {
                 for n in c_node.nodes.as_ref().unwrap() {
-                    let cc_node = self.node_pool.get(*n).unwrap();
+                    let cc_node = self.get_node(*n);
                     if cc_node.symbol == 0 {
                         return Some(cc_node.meta);
                     }
@@ -125,7 +129,7 @@ impl PrefixTree {
             let ref p = self.node_pool.get(parent).unwrap().nodes;
             let pn = p.as_ref().unwrap();
             for n in pn {
-                if self.node_pool.get(*n).unwrap().symbol == symbol {
+                if self.get_node(*n).symbol == symbol {
                     res = Some(*n);
                     break;
                 }
@@ -135,7 +139,7 @@ impl PrefixTree {
         if res.is_none() {
             let n_idx = self.node_pool.len();
             self.node_pool.push(Node::new(symbol, meta));
-            let mut p = self.node_pool.get_mut(parent).unwrap().nodes.as_mut().unwrap();;
+            let mut p = self.node_pool.get_mut(parent).unwrap().nodes.as_mut().unwrap();
             p.push(n_idx);
             res = Some(n_idx);
         }
