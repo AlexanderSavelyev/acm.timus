@@ -124,7 +124,6 @@ impl PrefixTree {
         let mut w_len: usize = 0;
 
         for w in prefix {
-            w_len += 1;
             has_path = false;
             let c_node = self.get_node(cur_node);
             if c_node.nodes.is_some() {
@@ -142,6 +141,7 @@ impl PrefixTree {
             if !has_path {
                 break;
             }
+            w_len += 1;
         }
 
         return res;
@@ -252,9 +252,15 @@ impl Solver {
 
             sub_words = self.prefix_tree.collect_exact_subwords(cur_word);
         }
+        if self.verbose {
+            println!("sub_words {:?}", sub_words);
+        }
         for (ex_word, w_len) in sub_words {
             let to = UNode::new(cur_usage_idx as i32, ex_word as i32);
             if !self.usage_graph.add_edge(from.clone(), to.clone()) {
+                if self.verbose {
+                    println!("already exists edge {:?} - {:?}", from.clone(), to.clone());
+                }
                 return;
             }
             self.build_expression(cur_pos + w_len, to.clone());
@@ -302,7 +308,7 @@ impl Solver {
             }
 
             if self.verbose {
-                println!("input = {} sup_words {:?}", idx, super_words);
+                println!("input = {} super_words {:?}", idx, super_words);
             }
 
             if super_words.is_none() {
@@ -398,10 +404,10 @@ xwz");
         let testb = test.into_bytes();
         let mut test_r = testb.as_slice();
         let mut buf: Vec<u8> = Vec::new();
-        solve(&mut test_r, &mut buf, true);
+        solve(&mut test_r, &mut buf, false);
 
         let res = String::from_utf8(buf).expect("valid string");
-        assert_eq!(res, "NO\n");
+        assert_eq!(res, "YES\nabacbabbc\n");
     }
 
     #[test]
