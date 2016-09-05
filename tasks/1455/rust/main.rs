@@ -220,10 +220,16 @@ struct Solver {
     usage_graph: UsageGraph,
     res_builder: Vec<u8>,
     result: Option<String>,
+    verbose: bool,
 }
 
 impl Solver {
     fn build_expression(&mut self, cur_pos: usize, from: UNode) {
+
+        if self.verbose {
+            println!("start build {:?} position {}", String::from_utf8_lossy(&self.res_builder), cur_pos);
+        }
+
         if self.result.is_some() {
             return;
         }
@@ -287,31 +293,36 @@ impl Solver {
 
     pub fn find_solution(&mut self) {
         for idx in 0..self.input_words.len() {
-            let sup_words = self.prefix_tree.get_words(&self.input_words[idx].as_bytes());
+            let super_words;
+            let cur_pos;
+            {
+                let cur_word = &self.input_words[idx].as_bytes();
+                cur_pos = cur_word.len();
+                super_words = self.prefix_tree.get_words(cur_word);
+            }
 
-            if sup_words.is_none() {
+            if self.verbose {
+                println!("input = {} sup_words {:?}", idx, super_words);
+            }
+
+            if super_words.is_none() {
                 continue;
             }
 
-            for sup_idx in sup_words.unwrap() {
-                let cur_pos;
+            for sup_idx in super_words.unwrap().iter().map(|w| *w as usize).filter(|w| *w != idx) {
                 {
-                    let cur_super_word = self.input_words.get(sup_idx as usize).unwrap().as_bytes();
+                    let cur_super_word = self.input_words.get(sup_idx).unwrap().as_bytes();
                     self.res_builder.extend_from_slice(cur_super_word);
-                    cur_pos = cur_super_word.len();
                 }
-
                 self.build_expression(cur_pos, UNode::new(-1, idx as i32));
-
                 self.res_builder.clear();
             }
-
         }
     }
 }
 
 
-fn solve(input: &mut Read, output: &mut Write) {
+fn solve(input: &mut Read, output: &mut Write, verbose: bool) {
     let mut reader = BufReader::new(input);
     let mut input = String::new();
 
@@ -324,11 +335,14 @@ fn solve(input: &mut Read, output: &mut Write) {
     for _ in 0..n {
         input.clear();
         reader.read_line(&mut input).unwrap();
-        println!("{:?}", input);
+
         input_words.push(String::from(input.trim()));
     }
 
     input_words.sort();
+    if verbose {
+        println!("words {:?}", input_words);
+    }
 
     let mut prefix_tree = PrefixTree::new();
 
@@ -343,6 +357,7 @@ fn solve(input: &mut Read, output: &mut Write) {
         usage_graph: UsageGraph::new(),
         res_builder: Vec::new(),
         result: None,
+        verbose: verbose,
     };
 
     solver.find_solution();
@@ -360,7 +375,7 @@ fn solve(input: &mut Read, output: &mut Write) {
 }
 
 fn main() {
-    solve(&mut io::stdin(), &mut io::stdout());
+    solve(&mut io::stdin(), &mut io::stdout(), false);
 }
 
 #[cfg(test)]
@@ -383,7 +398,7 @@ xwz");
         let testb = test.into_bytes();
         let mut test_r = testb.as_slice();
         let mut buf: Vec<u8> = Vec::new();
-        solve(&mut test_r, &mut buf);
+        solve(&mut test_r, &mut buf, true);
 
         let res = String::from_utf8(buf).expect("valid string");
         assert_eq!(res, "NO\n");
