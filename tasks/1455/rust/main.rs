@@ -215,6 +215,7 @@ impl UsageGraph {
 }
 
 struct Solver {
+    input_words: Vec<String>,
     prefix_tree: PrefixTree,
     usage_graph: UsageGraph,
     res_builder: Vec<u8>,
@@ -231,8 +232,9 @@ impl Solver {
         //      }
         let sub_words;
         let cur_usage_idx;
+        let cur_length;
         {
-            let cur_length = self.res_builder.len();
+            cur_length = self.res_builder.len();
             cur_usage_idx = cur_length - cur_pos;
 
             let (_, cur_word) = self.res_builder.split_at(cur_pos);
@@ -251,23 +253,60 @@ impl Solver {
             }
             self.build_expression(cur_pos + w_len, to.clone());
         }
+        let super_words;
+        let cur_word_len;
+        {
+            let (_, cur_word) = self.res_builder.split_at(cur_pos);
+            cur_word_len = cur_word.len();
+            super_words = self.prefix_tree.get_words(cur_word);
+        }
+        if super_words.is_none() {
+            return;
+        }
+        for cur_big_idx in super_words.unwrap() {
+            let to = UNode::new(cur_usage_idx as i32, cur_big_idx as i32);
 
+            if !self.usage_graph.add_edge(from.clone(), to.clone()) {
+                return;
+            }
 
+            {
+                let (_, cur_word_suffix) = self.input_words
+                                               .get(cur_big_idx as usize)
+                                               .unwrap()
+                                               .as_bytes()
+                                               .split_at(cur_word_len);
+                self.res_builder.extend_from_slice(cur_word_suffix);
+            }
 
-        //       LinkedList<Integer> w1 = getAllWordsContainedPrefix(curWord);
-        //       for (Integer curBigIdx : w1) {
-        //          String curBigWord = words.get(curBigIdx).substring(curWord.length());
+            self.build_expression(cur_length, to.clone());
+            self.usage_graph.remove_edge(&from, &to);
+            self.res_builder.truncate(cur_length);
+        }
+    }
 
-        // //         System.out.println("len = " + curUsageIdx + " w = " + curBigIdx);
-        //          Pair<Integer, Integer> to = new Pair(curUsageIdx, curBigIdx);
-        //          if (!usageTree.addEdge(curUsage, to)) {
-        //             return;
-        //          }
-        //          t.append(curBigWord);
-        //          buildExperssion(t, curLength, to);
-        //          usageTree.removeEdge(curUsage, to);
-        //          t.setLength(curLength);
-        //       }
+    pub fn find_solution(&mut self) {
+        for idx in 0..self.input_words.len() {
+            let sup_words = self.prefix_tree.get_words(&self.input_words[idx].as_bytes());
+
+            if sup_words.is_none() {
+                continue;
+            }
+
+            for sup_idx in sup_words.unwrap() {
+                let cur_pos;
+                {
+                    let cur_super_word = self.input_words.get(sup_idx as usize).unwrap().as_bytes();
+                    self.res_builder.extend_from_slice(cur_super_word);
+                    cur_pos = cur_super_word.len();
+                }
+
+                self.build_expression(cur_pos, UNode::new(-1, idx as i32));
+
+                self.res_builder.clear();
+            }
+
+        }
     }
 }
 
@@ -291,45 +330,22 @@ fn solve(input: &mut Read, output: &mut Write) {
 
     input_words.sort();
 
-    let mut exact_words: HashMap<String, usize> = HashMap::new();
     let mut prefix_tree = PrefixTree::new();
 
     for idx in 0..input_words.len() {
         prefix_tree.add_word(&input_words[idx], idx as u8);
-        exact_words.insert(input_words.get(idx).unwrap().clone(), idx);
     }
     // let mut res: Vec<u8> = Vec::new();
 
     let mut solver = Solver {
+        input_words: input_words,
         prefix_tree: prefix_tree,
         usage_graph: UsageGraph::new(),
         res_builder: Vec::new(),
         result: None,
     };
 
-    for idx in 0..input_words.len() {
-
-        let sup_words = solver.prefix_tree.get_words(&input_words[idx].as_bytes());
-
-        if sup_words.is_none() {
-            continue;
-        }
-
-        for sup_idx in sup_words.unwrap() {
-            let cur_super_word = input_words.get(sup_idx as usize).unwrap().as_bytes();
-            // res.extend_from_slice(cur_super_word);
-            solver.res_builder.extend_from_slice(cur_super_word);
-            let cur_pos = cur_super_word.len();
-
-            solver.build_expression(cur_pos, UNode::new(-1, idx as i32));
-
-            solver.res_builder.clear();
-
-        }
-
-    }
-
-
+    solver.find_solution();
 
     if solver.result.is_some() {
         writeln!(output, "YES").expect("correct output");
