@@ -100,7 +100,7 @@ impl PrefixTree {
         self.node_pool.get(n_idx).unwrap()
     }
 
-    pub fn contains_exact(&self, w: &[u8]) -> Option<u8> {
+    pub fn contains_exact(&self, w: &[u8]) -> bool {
         let cur_node = self.search_path(w);
         if cur_node.is_some() {
             let cn_idx = cur_node.unwrap();
@@ -109,15 +109,15 @@ impl PrefixTree {
                 for n in c_node.nodes.as_ref().unwrap() {
                     let cc_node = self.get_node(*n);
                     if cc_node.symbol == 0 {
-                        return Some(cc_node.meta);
+                        return true;
                     }
                 }
             }
         }
-        return None;
+        return false;
     }
 
-    pub fn collect_exact_subwords(&self, prefix: &[u8])->Vec<(u8, usize)> {
+    pub fn collect_exact_subwords(&self, prefix: &[u8]) -> Vec<(u8, usize)> {
         let mut res = Vec::new();
         let mut cur_node = self.get_root();
         let mut has_path;
@@ -144,7 +144,7 @@ impl PrefixTree {
             }
         }
 
-        return res
+        return res;
     }
 
     fn insert(&mut self, parent: usize, symbol: u8, meta: u8) -> usize {
@@ -210,7 +210,7 @@ impl UsageGraph {
         return true;
     }
     fn remove_edge(&mut self, from: &UNode, to: &UNode) {
-        self.adj_matrix.get_mut(from).map(|from_set| from_set.remove(to) );
+        self.adj_matrix.get_mut(from).map(|from_set| from_set.remove(to));
     }
 }
 
@@ -222,7 +222,6 @@ struct Solver {
 }
 
 impl Solver {
-
     fn build_expression(&mut self, cur_pos: usize, from: UNode) {
         if self.result.is_some() {
             return;
@@ -238,7 +237,7 @@ impl Solver {
 
             let (_, cur_word) = self.res_builder.split_at(cur_pos);
 
-            if self.prefix_tree.contains_exact(cur_word).is_some() {
+            if self.prefix_tree.contains_exact(cur_word) {
                 self.result = Some(String::from_utf8_lossy(&self.res_builder).to_string());
                 return;
             }
@@ -252,6 +251,8 @@ impl Solver {
             }
             self.build_expression(cur_pos + w_len, to.clone());
         }
+
+
 
         //       LinkedList<Integer> w1 = getAllWordsContainedPrefix(curWord);
         //       for (Integer curBigIdx : w1) {
@@ -413,7 +414,7 @@ xwz");
             assert_eq!(words, None);
         }
         {
-            assert_eq!(tree.contains_exact(b"abac"), Some(3));
+            assert_eq!(tree.contains_exact(b"abac"), true);
         }
 
     }
