@@ -117,6 +117,36 @@ impl PrefixTree {
         return None;
     }
 
+    pub fn collect_exact_subwords(&self, prefix: &[u8])->Vec<(u8, usize)> {
+        let mut res = Vec::new();
+        let mut cur_node = self.get_root();
+        let mut has_path;
+        let mut w_len: usize = 0;
+
+        for w in prefix {
+            w_len += 1;
+            has_path = false;
+            let c_node = self.get_node(cur_node);
+            if c_node.nodes.is_some() {
+                for n in c_node.nodes.as_ref().unwrap() {
+                    let cc_node = self.get_node(*n);
+                    if cc_node.symbol == *w {
+                        cur_node = *n;
+                        has_path = true;
+                    }
+                    if cc_node.symbol == 0 {
+                        res.push((cc_node.meta, w_len));
+                    }
+                }
+            }
+            if !has_path {
+                break;
+            }
+        }
+
+        return res
+    }
+
     fn insert(&mut self, parent: usize, symbol: u8, meta: u8) -> usize {
         let mut res: Option<usize> = None;
         {
@@ -192,9 +222,6 @@ struct Solver {
 }
 
 impl Solver {
-    // fn contains_exact_word(&self, w: &[u8]) -> Option<usize> {
-    //     return prefix_tree.contains_exact(w)
-    // }
 
     fn build_expression(&mut self, cur_pos: usize, from: UNode) {
         if self.result.is_some() {
@@ -203,48 +230,28 @@ impl Solver {
         //      if(result != null && (t.length() >= result.length() || result.length() > 1000)) {
         //         return;
         //      }
-        let cur_length = self.res_builder.len();
-        let cur_usage_idx = cur_length - cur_pos;
+        let sub_words;
+        let cur_usage_idx;
+        {
+            let cur_length = self.res_builder.len();
+            cur_usage_idx = cur_length - cur_pos;
 
-        let (_, cur_word) = self.res_builder.split_at(cur_pos);
+            let (_, cur_word) = self.res_builder.split_at(cur_pos);
 
-        if self.prefix_tree.contains_exact(cur_word).is_some() {
-            self.result = Some(String::from_utf8_lossy(&self.res_builder).to_string());
-            return;
-        }
-        // if(wordsContain(curWord) != null) {
-        //    result = t.toString();
-        //    return;
-        // }
-
-        for sub_word_size in 1..cur_word.len() {
-            let (cur_sub_word, _) = cur_word.split_at(sub_word_size);
-            let ex_word = self.prefix_tree.contains_exact(cur_sub_word);
-            if ex_word.is_some() {
-                let to = UNode::new(cur_usage_idx as i32, ex_word.unwrap() as i32);
-                if !self.usage_graph.add_edge(from.clone(), to.clone()) {
-                    return;
-                }
-                // self.build_expression(cur_pos + cur_sub_word.len(), to.clone());
-                self.usage_graph.remove_edge(&from, &to);
+            if self.prefix_tree.contains_exact(cur_word).is_some() {
+                self.result = Some(String::from_utf8_lossy(&self.res_builder).to_string());
+                return;
             }
-        }
 
-        //       for (int subWordSize = 1; subWordSize < curWord.length(); subWordSize++) {
-        //          if(!sizeExists(subWordSize)) {
-        //             continue;
-        //          }
-        //          String curSubWord = curWord.substring(0, subWordSize);
-        //          Integer exWord = wordsContain(curSubWord);
-        //          if (exWord != null) {
-        //             Pair<Integer, Integer> to = new Pair(curUsageIdx, exWord);
-        // //            if (!usageTree.addEdge(curUsage, to)) {
-        // //               return;
-        // //            }
-        //             buildExperssion(t, curPos + curSubWord.length(), to);
-        // //            usageTree.removeEdge(curUsage, to);
-        //          }
-        //       }
+            sub_words = self.prefix_tree.collect_exact_subwords(cur_word);
+        }
+        for (ex_word, w_len) in sub_words {
+            let to = UNode::new(cur_usage_idx as i32, ex_word as i32);
+            if !self.usage_graph.add_edge(from.clone(), to.clone()) {
+                return;
+            }
+            self.build_expression(cur_pos + w_len, to.clone());
+        }
 
         //       LinkedList<Integer> w1 = getAllWordsContainedPrefix(curWord);
         //       for (Integer curBigIdx : w1) {
