@@ -148,7 +148,7 @@ impl PrefixTree {
     }
 }
 
-#[derive(Hash, Eq, PartialEq, Debug)]
+#[derive(Hash, Eq, PartialEq, Debug, Clone)]
 struct UNode {
     word_idx: i32,
     symb_idx: i32,
@@ -176,17 +176,19 @@ impl UsageGraph {
         if from_set.contains(&to) {
             return false;
         }
-        from_set.insert(to);
+        from_set.insert(to.clone());
         return true;
     }
-    fn remove_edge(&mut self, from: UNode, to: UNode) {
-        let mut from_set = self.adj_matrix.entry(from).or_insert(HashSet::new());
-        from_set.remove(&to);
+    fn remove_edge(&mut self, from: &UNode, to: &UNode) {
+        self.adj_matrix.get_mut(from).map(|from_set| from_set.remove(to) );
     }
 }
 
 struct Solver {
     prefix_tree: PrefixTree,
+    usage_graph: UsageGraph,
+    res_builder: Vec<u8>,
+    result: Option<String>,
 }
 
 impl Solver {
@@ -194,21 +196,39 @@ impl Solver {
     //     return prefix_tree.contains_exact(w)
     // }
 
-    fn build_expression(&self, res: &mut Vec<u8>, cur_pos: usize, node: UNode) {
-        // if(result != null) {
-        //      return;
-        //   }
+    fn build_expression(&mut self, cur_pos: usize, from: UNode) {
+        if self.result.is_some() {
+            return;
+        }
         //      if(result != null && (t.length() >= result.length() || result.length() > 1000)) {
         //         return;
         //      }
-        let cur_length = res.len();
+        let cur_length = self.res_builder.len();
         let cur_usage_idx = cur_length - cur_pos;
 
-        let (_, cur_word) = res.split_at(cur_pos);
+        let (_, cur_word) = self.res_builder.split_at(cur_pos);
+
+        if self.prefix_tree.contains_exact(cur_word).is_some() {
+            self.result = Some(String::from_utf8_lossy(&self.res_builder).to_string());
+            return;
+        }
         // if(wordsContain(curWord) != null) {
         //    result = t.toString();
         //    return;
         // }
+
+        for sub_word_size in 1..cur_word.len() {
+            let (cur_sub_word, _) = cur_word.split_at(sub_word_size);
+            let ex_word = self.prefix_tree.contains_exact(cur_sub_word);
+            if ex_word.is_some() {
+                let to = UNode::new(cur_usage_idx as i32, ex_word.unwrap() as i32);
+                if !self.usage_graph.add_edge(from.clone(), to.clone()) {
+                    return;
+                }
+                // self.build_expression(cur_pos + cur_sub_word.len(), to.clone());
+                self.usage_graph.remove_edge(&from, &to);
+            }
+        }
 
         //       for (int subWordSize = 1; subWordSize < curWord.length(); subWordSize++) {
         //          if(!sizeExists(subWordSize)) {
@@ -263,17 +283,21 @@ fn solve(input: &mut Read, output: &mut Write) {
 
     input_words.sort();
 
-    let mut prefix_tree = PrefixTree::new();
     let mut exact_words: HashMap<String, usize> = HashMap::new();
-
+    let mut prefix_tree = PrefixTree::new();
 
     for idx in 0..input_words.len() {
         prefix_tree.add_word(&input_words[idx], idx as u8);
         exact_words.insert(input_words.get(idx).unwrap().clone(), idx);
     }
-    let mut res: Vec<u8> = Vec::new();
+    // let mut res: Vec<u8> = Vec::new();
 
-    let solver = Solver { prefix_tree: prefix_tree };
+    let mut solver = Solver {
+        prefix_tree: prefix_tree,
+        usage_graph: UsageGraph::new(),
+        res_builder: Vec::new(),
+        result: None,
+    };
 
     for idx in 0..input_words.len() {
 
@@ -285,12 +309,13 @@ fn solve(input: &mut Read, output: &mut Write) {
 
         for sup_idx in sup_words.unwrap() {
             let cur_super_word = input_words.get(sup_idx as usize).unwrap().as_bytes();
-            res.extend_from_slice(cur_super_word);
+            // res.extend_from_slice(cur_super_word);
+            solver.res_builder.extend_from_slice(cur_super_word);
             let cur_pos = cur_super_word.len();
 
-            solver.build_expression(&mut res, cur_pos, UNode::new(-1, idx as i32));
+            solver.build_expression(cur_pos, UNode::new(-1, idx as i32));
 
-            res.clear();
+            solver.res_builder.clear();
 
         }
 
@@ -298,9 +323,9 @@ fn solve(input: &mut Read, output: &mut Write) {
 
 
 
-    if res.len() > 0 {
+    if solver.result.is_some() {
         writeln!(output, "YES").expect("correct output");
-        writeln!(output, "{}", String::from_utf8(res).unwrap()).expect("correct output");
+        writeln!(output, "{}", solver.result.unwrap()).expect("correct output");
     } else {
         writeln!(output, "NO").expect("correct output");;
     }
@@ -392,7 +417,7 @@ xwz");
         assert!(usage_graph.add_edge(UNode::new(1, 2), UNode::new(2, 3)));
         assert!(!usage_graph.add_edge(UNode::new(1, 2), UNode::new(2, 3)));
         assert!(usage_graph.add_edge(UNode::new(-1, 2), UNode::new(2, 3)));
-        usage_graph.remove_edge(UNode::new(1, 2), UNode::new(2, 3));
+        usage_graph.remove_edge(&UNode::new(1, 2), &UNode::new(2, 3));
         assert!(usage_graph.add_edge(UNode::new(1, 2), UNode::new(2, 3)));
     }
 }
