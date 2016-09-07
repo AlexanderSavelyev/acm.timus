@@ -1,6 +1,6 @@
 use std::io::{self, BufReader};
 use std::io::prelude::*;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, BTreeSet, HashSet};
 
 struct Node {
     pub symbol: u8,
@@ -226,16 +226,20 @@ struct Solver {
 impl Solver {
     fn build_expression(&mut self, cur_pos: usize, from: UNode) {
 
+        if self.res_builder.len() > 20000 {
+            panic!("wrong answer");
+        }
+
         if self.verbose {
             println!("start build {:?} position {}", String::from_utf8_lossy(&self.res_builder), cur_pos);
         }
 
-        if self.result.is_some() {
+        // if self.result.is_some() {
+        //     return;
+        // }
+         if self.result.is_some() && (self.res_builder.len() >= self.result.as_ref().unwrap().len() || self.result.as_ref().unwrap().len() > 10000) {
             return;
-        }
-        //      if(result != null && (t.length() >= result.length() || result.length() > 1000)) {
-        //         return;
-        //      }
+         }
         let sub_words;
         let cur_usage_idx;
         let cur_length;
@@ -337,15 +341,18 @@ fn solve(input: &mut Read, output: &mut Write, verbose: bool) {
     reader.read_line(&mut input).unwrap();
     let n: i32 = input.trim().parse().unwrap();
     // let mut buf = Vec<u8>;
+    let mut word_set = BTreeSet::new();
 
     for _ in 0..n {
         input.clear();
         reader.read_line(&mut input).unwrap();
-
-        input_words.push(String::from(input.trim()));
+        word_set.insert(String::from(input.trim()));
+    }
+    for w in word_set {
+        input_words.push(w.clone());
     }
 
-    input_words.sort();
+    // input_words.sort();
     if verbose {
         println!("words {:?}", input_words);
     }
@@ -390,6 +397,7 @@ mod tests {
     use PrefixTree;
     use UsageGraph;
     use UNode;
+    use std::fs::File;
 
     #[test]
     fn basic_test() {
@@ -464,5 +472,97 @@ xwz");
         assert!(usage_graph.add_edge(UNode::new(-1, 2), UNode::new(2, 3)));
         usage_graph.remove_edge(&UNode::new(1, 2), &UNode::new(2, 3));
         assert!(usage_graph.add_edge(UNode::new(1, 2), UNode::new(2, 3)));
+    }
+
+    #[test]
+    fn test_run2() {
+        let test = String::from("2
+ab
+abab");
+        let testb = test.into_bytes();
+        let mut test_r = testb.as_slice();
+        let mut buf: Vec<u8> = Vec::new();
+        solve(&mut test_r, &mut buf, false);
+
+        let res = String::from_utf8(buf).expect("valid string");
+        assert_eq!(res, "YES\nabab\n");
+    }
+    #[test]
+    fn test_run3() {
+        let test = String::from("4
+ab
+ba
+aba
+bab");
+        let testb = test.into_bytes();
+        let mut test_r = testb.as_slice();
+        let mut buf: Vec<u8> = Vec::new();
+        solve(&mut test_r, &mut buf, false);
+
+        let res = String::from_utf8(buf).expect("valid string");
+        assert_eq!(res, "YES\nababa\n");
+    }
+    #[test]
+    fn test_run4() {
+        let test = String::from("3
+abcab
+abc
+c");
+        let testb = test.into_bytes();
+        let mut test_r = testb.as_slice();
+        let mut buf: Vec<u8> = Vec::new();
+        solve(&mut test_r, &mut buf, false);
+
+        let res = String::from_utf8(buf).expect("valid string");
+        assert_eq!(res, "YES\nabcabc\n");
+    }
+    #[test]
+    fn test_run5() {
+        let test = String::from("9
+ab
+ab
+acb
+acb
+bc
+bc
+abac
+babbc
+babbc");
+        let testb = test.into_bytes();
+        let mut test_r = testb.as_slice();
+        let mut buf: Vec<u8> = Vec::new();
+        solve(&mut test_r, &mut buf, false);
+
+        let res = String::from_utf8(buf).expect("valid string");
+        assert_eq!(res, "YES\nabacbabbc\n");
+    }
+
+    #[test]
+    fn test_from_file1() {
+        let mut f = File::open("../test1.txt").expect("correct test");
+        let mut buf: Vec<u8> = Vec::new();
+        // let testb = test.into_bytes();
+        // let mut test_r = testb.as_slice();
+        // let mut buf: Vec<u8> = Vec::new();
+        solve(&mut f, &mut buf, false);
+
+        let res = String::from_utf8(buf).expect("valid string");
+        assert_eq!(res, "YES\nabbabbc\n");
+    }
+
+    #[test]
+    fn test_run6() {
+        let test = String::from("4
+ab
+ab
+ab
+ab");
+        let testb = test.into_bytes();
+        let mut test_r = testb.as_slice();
+        let mut buf: Vec<u8> = Vec::new();
+        solve(&mut test_r, &mut buf, false);
+
+        let res = String::from_utf8(buf).expect("valid string");
+        assert_eq!(res, "NO\n");
     }
 }
