@@ -226,20 +226,22 @@ struct Solver {
 impl Solver {
     fn build_expression(&mut self, cur_pos: usize, from: UNode) {
 
-        if self.res_builder.len() > 20000 {
-            panic!("wrong answer");
-        }
+        // if self.res_builder.len() > 2000{
+        //    panic!("wrong answer");
+        // }
 
         if self.verbose {
-            println!("start build {:?} position {}", String::from_utf8_lossy(&self.res_builder), cur_pos);
+            println!("start build {:?} position {}",
+                     String::from_utf8_lossy(&self.res_builder),
+                     cur_pos);
         }
 
         // if self.result.is_some() {
         //     return;
         // }
-         if self.result.is_some() && (self.res_builder.len() >= self.result.as_ref().unwrap().len() || self.result.as_ref().unwrap().len() > 10000) {
+        if self.should_stop() {
             return;
-         }
+        }
         let sub_words;
         let cur_usage_idx;
         let cur_length;
@@ -250,6 +252,9 @@ impl Solver {
             let (_, cur_word) = self.res_builder.split_at(cur_pos);
 
             if self.prefix_tree.contains_exact(cur_word) {
+                // if self.result.is_some() && self.result.as_ref().unwrap().len() < self.res_builder.len() {
+                //     return;
+                // }
                 self.result = Some(String::from_utf8_lossy(&self.res_builder).to_string());
                 return;
             }
@@ -268,6 +273,8 @@ impl Solver {
                 return;
             }
             self.build_expression(cur_pos + w_len, to.clone());
+
+            self.usage_graph.remove_edge(&from, &to);
         }
         let super_words;
         let cur_word_len;
@@ -301,7 +308,24 @@ impl Solver {
         }
     }
 
+    fn should_stop(&self) -> bool {
+        if self.result.is_some() {
+            let res = self.result.as_ref().unwrap().as_bytes();
+            if self.res_builder.len() >= res.len() {
+                return true;
+            }
+            for i in 0..self.res_builder.len() {
+                if self.res_builder[i] != res[i] {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     pub fn find_solution(&mut self) {
+        let mut total_res: Option<String> = None;
+
         for idx in 0..self.input_words.len() {
             let super_words;
             let cur_pos;
@@ -319,6 +343,7 @@ impl Solver {
                 continue;
             }
 
+
             for sup_idx in super_words.unwrap().iter().map(|w| *w as usize).filter(|w| *w != idx) {
                 {
                     let cur_super_word = self.input_words.get(sup_idx).unwrap().as_bytes();
@@ -327,7 +352,18 @@ impl Solver {
                 self.build_expression(cur_pos, UNode::new(-1, idx as i32));
                 self.res_builder.clear();
             }
+            self.result.as_ref().map(|w| {
+                if total_res.is_some() {
+                    if w.len() <= total_res.as_ref().unwrap().len() {
+                        total_res = Some(w.clone());
+                    }
+                } else {
+                    total_res = Some(w.clone());
+                }
+            });
+            self.result = None;
         }
+        self.result = total_res;
     }
 }
 
@@ -348,8 +384,8 @@ fn solve(input: &mut Read, output: &mut Write, verbose: bool) {
         reader.read_line(&mut input).unwrap();
         word_set.insert(String::from(input.trim()));
     }
-    for w in word_set {
-        input_words.push(w.clone());
+    for w in word_set.into_iter().rev() {
+        input_words.push(w);
     }
 
     // input_words.sort();
@@ -564,5 +600,20 @@ ab");
 
         let res = String::from_utf8(buf).expect("valid string");
         assert_eq!(res, "NO\n");
+    }
+    #[test]
+    fn test_run7() {
+        let test = String::from("4
+abcc
+ab
+c
+");
+        let testb = test.into_bytes();
+        let mut test_r = testb.as_slice();
+        let mut buf: Vec<u8> = Vec::new();
+        solve(&mut test_r, &mut buf, false);
+
+        let res = String::from_utf8(buf).expect("valid string");
+        assert_eq!(res, "YES\nabcc\n");
     }
 }
