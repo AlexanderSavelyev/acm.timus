@@ -1,6 +1,7 @@
 use std::io::{self, BufReader};
 use std::io::prelude::*;
 use std::collections::{HashMap, BTreeSet, HashSet};
+use std::fs::File;
 
 struct Node {
     pub symbol: u8,
@@ -214,25 +215,72 @@ impl UsageGraph {
     }
 }
 
+struct ResBuilder {
+    buf: Vec<u8>,
+    len: usize,
+}
+
+impl ResBuilder {
+    pub fn new() ->ResBuilder {
+        ResBuilder {
+            buf: Vec::new(),
+            len: 0,
+        }
+    }
+
+    pub fn set_len(&mut self, new_len: usize) {
+        self.len = new_len;
+    }
+
+    pub fn extend(&mut self, part: &[u8]) {
+        let start_idx = self.len;
+        self.len += part.len();
+        while self.buf.len() < self.len {
+            self.buf.push(0);
+        }
+        for i in start_idx..self.len {
+            self.buf[i] = part[i-start_idx];
+        }
+    }
+    pub fn len(&self) -> usize {
+        self.len
+    }
+
+    pub fn to_string(&self)->String {
+        let (res, _) = self.buf.split_at(self.len);
+        String::from_utf8_lossy(res).to_string()
+    }
+
+    pub fn split_after<'a>(&'a self, mid: usize) -> &'a [u8] {
+        let (_, first) = self.buf.split_at(mid);
+        let (res, _) = first.split_at(self.len-mid);
+        return res 
+    }
+}
+
 struct Solver {
     input_words: Vec<String>,
     prefix_tree: PrefixTree,
     usage_graph: UsageGraph,
-    res_builder: Vec<u8>,
+    res_builder: ResBuilder,
     result: Option<String>,
     verbose: bool,
+    counter: usize,
 }
 
 impl Solver {
     fn build_expression(&mut self, cur_pos: usize, from: UNode) {
-
+        // self.counter += 1;
+        // if self.counter > 300000 {
+        //     return;
+        // }
         // if self.res_builder.len() > 2000{
         //    panic!("wrong answer");
         // }
 
         if self.verbose {
             println!("start build {:?} position {}",
-                     String::from_utf8_lossy(&self.res_builder),
+                     self.res_builder.to_string(),
                      cur_pos);
         }
 
@@ -249,13 +297,13 @@ impl Solver {
             cur_length = self.res_builder.len();
             cur_usage_idx = cur_length - cur_pos;
 
-            let (_, cur_word) = self.res_builder.split_at(cur_pos);
+            let cur_word = self.res_builder.split_after(cur_pos);
 
             if self.prefix_tree.contains_exact(cur_word) {
                 // if self.result.is_some() && self.result.as_ref().unwrap().len() < self.res_builder.len() {
                 //     return;
                 // }
-                self.result = Some(String::from_utf8_lossy(&self.res_builder).to_string());
+                self.result = Some(self.res_builder.to_string());
                 return;
             }
 
@@ -279,7 +327,7 @@ impl Solver {
         let super_words;
         let cur_word_len;
         {
-            let (_, cur_word) = self.res_builder.split_at(cur_pos);
+            let cur_word = self.res_builder.split_after(cur_pos);
             cur_word_len = cur_word.len();
             super_words = self.prefix_tree.get_words(cur_word);
         }
@@ -299,12 +347,12 @@ impl Solver {
                                                .unwrap()
                                                .as_bytes()
                                                .split_at(cur_word_len);
-                self.res_builder.extend_from_slice(cur_word_suffix);
+                self.res_builder.extend(cur_word_suffix);
             }
 
             self.build_expression(cur_length, to.clone());
             self.usage_graph.remove_edge(&from, &to);
-            self.res_builder.truncate(cur_length);
+            self.res_builder.set_len(cur_length);
         }
     }
 
@@ -314,17 +362,17 @@ impl Solver {
             if self.res_builder.len() >= res.len() {
                 return true;
             }
-            for i in 0..self.res_builder.len() {
-                if self.res_builder[i] != res[i] {
-                    return true;
-                }
-            }
+            // for i in 0..self.res_builder.len() {
+            //     if self.res_builder[i] != res[i] {
+            //         return true;
+            //     }
+            // }
         }
         return false;
     }
 
     pub fn find_solution(&mut self) {
-        let mut total_res: Option<String> = None;
+        // let mut total_res: Option<String> = None;
 
         for idx in 0..self.input_words.len() {
             let super_words;
@@ -347,23 +395,23 @@ impl Solver {
             for sup_idx in super_words.unwrap().iter().map(|w| *w as usize).filter(|w| *w != idx) {
                 {
                     let cur_super_word = self.input_words.get(sup_idx).unwrap().as_bytes();
-                    self.res_builder.extend_from_slice(cur_super_word);
+                    self.res_builder.extend(cur_super_word);
                 }
                 self.build_expression(cur_pos, UNode::new(-1, idx as i32));
-                self.res_builder.clear();
+                self.res_builder.set_len(0);
             }
-            self.result.as_ref().map(|w| {
-                if total_res.is_some() {
-                    if w.len() <= total_res.as_ref().unwrap().len() {
-                        total_res = Some(w.clone());
-                    }
-                } else {
-                    total_res = Some(w.clone());
-                }
-            });
-            self.result = None;
+            // self.result.as_ref().map(|w| {
+            //     if total_res.is_some() {
+            //         if w.len() <= total_res.as_ref().unwrap().len() {
+            //             total_res = Some(w.clone());
+            //         }
+            //     } else {
+            //         total_res = Some(w.clone());
+            //     }
+            // });
+            // self.result = None;
         }
-        self.result = total_res;
+        // self.result = total_res;
     }
 }
 
@@ -404,12 +452,15 @@ fn solve(input: &mut Read, output: &mut Write, verbose: bool) {
         input_words: input_words,
         prefix_tree: prefix_tree,
         usage_graph: UsageGraph::new(),
-        res_builder: Vec::new(),
+        res_builder: ResBuilder::new(),
         result: None,
         verbose: verbose,
+        counter: 0,
     };
 
-    solver.find_solution();
+    // for _ in 0..100 {
+        solver.find_solution();
+    // }
 
     if solver.result.is_some() {
         writeln!(output, "YES").expect("correct output");
@@ -424,6 +475,8 @@ fn solve(input: &mut Read, output: &mut Write, verbose: bool) {
 }
 
 fn main() {
+    // let mut f = File::open("../test1.txt").expect("correct test");
+    // solve(&mut f, &mut io::stdout(), false);
     solve(&mut io::stdin(), &mut io::stdout(), false);
 }
 
