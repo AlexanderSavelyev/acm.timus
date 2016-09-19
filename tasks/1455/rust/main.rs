@@ -181,95 +181,96 @@ impl PrefixTree {
 
 #[derive(Hash, Eq, PartialEq, Debug, Clone)]
 struct UNode {
-    pub symb_idx: usize,
-    pub word_idx: usize,
+    pub start_pos: u8,
+    pub base_word: u8,
+    pub sub_word: u8,
 }
 impl UNode {
-    fn new(s: usize, w: usize) -> UNode {
+    fn new(f: u8, b: u8, s: u8) -> UNode {
         UNode {
-            word_idx: w,
-            symb_idx: s,
+            start_pos: f,
+            base_word: b,
+            sub_word: s,
         }
     }
 }
 
 #[derive (Default)]
-struct UsageGraph {
-    adj_matrix: HashMap<UNode, HashSet<UNode>>,
+struct UsageTree {
+    // Map from node to parent node
+    parent_map: HashMap<UNode, Option<UNode>>,
 }
 
-impl UsageGraph {
-    fn new() -> UsageGraph {
-        UsageGraph::default()
+impl UsageTree {
+    fn new() -> UsageTree {
+        UsageTree::default()
     }
-    fn add_edge(&mut self, from: UNode, to: UNode) -> bool {
-        let mut from_set = self.adj_matrix.entry(from).or_insert(HashSet::new());
-        if from_set.contains(&to) {
-            return false;
-        }
-        from_set.insert(to.clone());
-        return true;
+    pub fn add_edge(&mut self, from: Option<UNode>, to: UNode) {
+        self.parent_map.insert(to, from);
     }
-    fn remove_edge(&mut self, from: &UNode, to: &UNode) {
-        self.adj_matrix.get_mut(from).map(|from_set| from_set.remove(to));
+    pub fn remove_node(&mut self, n: &UNode) {
+        self.parent_map.remove(n);
     }
+    pub fn contains_node(&self, n: &UNode) -> bool{
+        return self.parent_map.contains_key(n);
+    }
+
 }
 
-struct ResBuilder {
-    buf: Vec<u8>,
-    len: usize,
-}
+// struct ResBuilder {
+//     buf: Vec<u8>,
+//     len: usize,
+// }
 
-impl ResBuilder {
-    pub fn new() -> ResBuilder {
-        ResBuilder {
-            buf: Vec::new(),
-            len: 0,
-        }
-    }
+// impl ResBuilder {
+//     pub fn new() -> ResBuilder {
+//         ResBuilder {
+//             buf: Vec::new(),
+//             len: 0,
+//         }
+//     }
 
-    pub fn set_len(&mut self, new_len: usize) {
-        self.len = new_len;
-    }
+//     pub fn set_len(&mut self, new_len: usize) {
+//         self.len = new_len;
+//     }
 
-    pub fn extend(&mut self, part: &[u8]) {
-        let start_idx = self.len;
-        self.len += part.len();
-        while self.buf.len() < self.len {
-            self.buf.push(0);
-        }
-        for i in start_idx..self.len {
-            self.buf[i] = part[i - start_idx];
-        }
-    }
-    pub fn len(&self) -> usize {
-        self.len
-    }
+//     pub fn extend(&mut self, part: &[u8]) {
+//         let start_idx = self.len;
+//         self.len += part.len();
+//         while self.buf.len() < self.len {
+//             self.buf.push(0);
+//         }
+//         for i in start_idx..self.len {
+//             self.buf[i] = part[i - start_idx];
+//         }
+//     }
+//     pub fn len(&self) -> usize {
+//         self.len
+//     }
 
-    pub fn to_string(&self) -> String {
-        let (res, _) = self.buf.split_at(self.len);
-        String::from_utf8_lossy(res).to_string()
-    }
+//     pub fn to_string(&self) -> String {
+//         let (res, _) = self.buf.split_at(self.len);
+//         String::from_utf8_lossy(res).to_string()
+//     }
 
-    pub fn split_after<'a>(&'a self, mid: usize) -> &'a [u8] {
-        let (_, first) = self.buf.split_at(mid);
-        let (res, _) = first.split_at(self.len - mid);
-        return res;
-    }
-}
+//     pub fn split_after<'a>(&'a self, mid: usize) -> &'a [u8] {
+//         let (_, first) = self.buf.split_at(mid);
+//         let (res, _) = first.split_at(self.len - mid);
+//         return res;
+//     }
+// }
 
 struct Solver {
     input_words: Vec<Vec<u8>>,
     prefix_tree: PrefixTree,
-    usage_graph: UsageGraph,
-    res_builder: ResBuilder,
+    usage_tree: UsageTree,
     result: Option<String>,
     verbose: bool,
     counter: usize,
 }
 
 impl Solver {
-    fn build_expression(&mut self, cur_pos: usize, base_word: usize, from: UNode) {
+    fn build_expression(&mut self, from: UNode) {
         // self.counter += 1;
         // if self.counter > 300000 {
         //     return;
@@ -279,9 +280,9 @@ impl Solver {
         // }
 
         if self.verbose {
-            println!("start build {:?} position {}",
-                     self.res_builder.to_string(),
-                     cur_pos);
+            // println!("start build {:?} position {}",
+            //          self.res_builder.to_string(),
+            //          cur_pos);
         }
 
         // if self.result.is_some() {
@@ -299,8 +300,8 @@ impl Solver {
             // cur_usage_idx = cur_length - cur_pos;
 
             // let cur_word = self.res_builder.split_after(cur_pos);
-            let from_word = &self.input_words[base_word];
-            let (_, cur_word) = from_word.split_at(cur_pos);
+            let from_word = &self.input_words[from.base_word];
+            let (_, cur_word) = from_word.split_at(from.start_pos);
 
             if self.prefix_tree.contains_exact(cur_word) {
                 // if self.result.is_some() && self.result.as_ref().unwrap().len() < self.res_builder.len() {
@@ -317,24 +318,23 @@ impl Solver {
             println!("sub_words {:?}", sub_words);
         }
         for (ex_word, w_len) in sub_words {
-            let cur_usage_idx = cur_pos + w_len;
-            let to = UNode::new(cur_usage_idx, ex_word as usize);
-            if !self.usage_graph.add_edge(from.clone(), to.clone()) {
+            let to = UNode::new(from.start_pos + w_len, from.base_word, ex_word);
+            if self.usage_tree.contains_node(&to) {
                 if self.verbose {
-                    println!("already exists edge {:?} - {:?}", from.clone(), to.clone());
+                    println!("already exists node {:?}", to.clone());
                 }
                 return;
             }
-            self.build_expression(cur_usage_idx, base_word, to.clone());
+            self.build_expression(to.clone());
 
-            self.usage_graph.remove_edge(&from, &to);
+            self.usage_tree.remove_node(&to);
         }
         let super_words;
         let cur_word_len;
         {
             // let cur_word = self.res_builder.split_after(cur_pos);
             // cur_word_len = cur_word.len();
-            let from_word = &self.input_words[base_word];
+            let from_word = &self.input_words[from.base_word];
             let (_, cur_word) = from_word.split_at(cur_pos);
             cur_word_len = cur_word.len();
             super_words = self.prefix_tree.get_words(cur_word);
@@ -342,10 +342,10 @@ impl Solver {
         if super_words.is_none() {
             return;
         }
-        for cur_big_idx in super_words.unwrap().iter().map(|b| *b as usize) {
-            let to = UNode::new(cur_pos, cur_big_idx);
+        for cur_big_idx in super_words.unwrap().iter() {
+            let to = UNode::new(from.start_pos, from.base_word, cur_big_idx);
 
-            if !self.usage_graph.add_edge(from.clone(), to.clone()) {
+            if self.usage_tree.contains_node(&to) {
                 return;
             }
 
@@ -364,7 +364,7 @@ impl Solver {
             // }
 
             self.build_expression(big_word_len - cur_word_len, cur_big_idx, to.clone());
-            self.usage_graph.remove_edge(&from, &to);
+            self.usage_tree.remove_edge(&from, &to);
             // self.res_builder.set_len(cur_length);
         }
     }
@@ -372,9 +372,9 @@ impl Solver {
     fn should_stop(&self) -> bool {
         if self.result.is_some() {
             let res = self.result.as_ref().unwrap().as_bytes();
-            if self.res_builder.len() >= res.len() {
-                return true;
-            }
+            // if self.res_builder.len() >= res.len() {
+            //     return true;
+            // }
             // for i in 0..self.res_builder.len() {
             //     if self.res_builder[i] != res[i] {
             //         return true;
@@ -405,13 +405,14 @@ impl Solver {
             }
 
             for sup_idx in super_words.unwrap().iter().map(|w| *w as usize).filter(|w| *w != idx) {
-                let cur_length;
+                let from: UNode;
                 {
                     let cur_super_word = self.input_words.get(sup_idx).unwrap();
                     // self.res_builder.extend(cur_super_word);
                     cur_length = cur_super_word.len();
+                    from = Unode::new(cur_length, sup_idx, idx);
                 }
-                self.build_expression(cur_pos, cur_length, UNode::new(0, idx));
+                self.build_expression(from);
                 // self.res_builder.set_len(0);
             }
             // self.result.as_ref().map(|w| {
@@ -464,8 +465,7 @@ fn solve(input: &mut Read, output: &mut Write, verbose: bool) {
     let mut solver = Solver {
         input_words: input_words,
         prefix_tree: prefix_tree,
-        usage_graph: UsageGraph::new(),
-        res_builder: ResBuilder::new(),
+        usage_tree: UsageTree::new(),
         result: None,
         verbose: verbose,
         counter: 0,
@@ -497,7 +497,7 @@ fn main() {
 mod tests {
     use solve;
     use PrefixTree;
-    use UsageGraph;
+    use UsageTree;
     use UNode;
     use std::fs::File;
 
@@ -566,15 +566,15 @@ xwz");
 
     }
 
-    #[test]
-    fn test_usage_graph() {
-        let mut usage_graph = UsageGraph::new();
-        assert!(usage_graph.add_edge(UNode::new(1, 2), UNode::new(2, 3)));
-        assert!(!usage_graph.add_edge(UNode::new(1, 2), UNode::new(2, 3)));
-        assert!(usage_graph.add_edge(UNode::new(0, 2), UNode::new(2, 3)));
-        usage_graph.remove_edge(&UNode::new(1, 2), &UNode::new(2, 3));
-        assert!(usage_graph.add_edge(UNode::new(1, 2), UNode::new(2, 3)));
-    }
+    // #[test]
+    // fn test_usage_tree() {
+    //     let mut usage_tree = UsageGraph::new();
+    //     assert!(usage_tree.add_edge(UNode::new(1, 2), UNode::new(2, 3)));
+    //     assert!(!usage_tree.add_edge(UNode::new(1, 2), UNode::new(2, 3)));
+    //     assert!(usage_tree.add_edge(UNode::new(0, 2), UNode::new(2, 3)));
+    //     usage_tree.remove_edge(&UNode::new(1, 2), &UNode::new(2, 3));
+    //     assert!(usage_tree.add_edge(UNode::new(1, 2), UNode::new(2, 3)));
+    // }
 
     #[test]
     fn test_run2() {
