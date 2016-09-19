@@ -221,7 +221,7 @@ struct ResBuilder {
 }
 
 impl ResBuilder {
-    pub fn new() ->ResBuilder {
+    pub fn new() -> ResBuilder {
         ResBuilder {
             buf: Vec::new(),
             len: 0,
@@ -239,22 +239,22 @@ impl ResBuilder {
             self.buf.push(0);
         }
         for i in start_idx..self.len {
-            self.buf[i] = part[i-start_idx];
+            self.buf[i] = part[i - start_idx];
         }
     }
     pub fn len(&self) -> usize {
         self.len
     }
 
-    pub fn to_string(&self)->String {
+    pub fn to_string(&self) -> String {
         let (res, _) = self.buf.split_at(self.len);
         String::from_utf8_lossy(res).to_string()
     }
 
     pub fn split_after<'a>(&'a self, mid: usize) -> &'a [u8] {
         let (_, first) = self.buf.split_at(mid);
-        let (res, _) = first.split_at(self.len-mid);
-        return res 
+        let (res, _) = first.split_at(self.len - mid);
+        return res;
     }
 }
 
@@ -299,7 +299,7 @@ impl Solver {
             // cur_usage_idx = cur_length - cur_pos;
 
             // let cur_word = self.res_builder.split_after(cur_pos);
-            let from_word = &self.input_words[base_word]; 
+            let from_word = &self.input_words[base_word];
             let (_, cur_word) = from_word.split_at(cur_pos);
 
             if self.prefix_tree.contains_exact(cur_word) {
@@ -334,7 +334,7 @@ impl Solver {
         {
             // let cur_word = self.res_builder.split_after(cur_pos);
             // cur_word_len = cur_word.len();
-            let from_word = &self.input_words[base_word]; 
+            let from_word = &self.input_words[base_word];
             let (_, cur_word) = from_word.split_at(cur_pos);
             cur_word_len = cur_word.len();
             super_words = self.prefix_tree.get_words(cur_word);
@@ -350,9 +350,9 @@ impl Solver {
             }
 
             let big_word_len = self.input_words
-                                               .get(cur_big_idx)
-                                               .unwrap()
-                                               .len();
+                                   .get(cur_big_idx)
+                                   .unwrap()
+                                   .len();
 
             // {
             //     let (_, cur_word_suffix) = self.input_words
@@ -446,7 +446,7 @@ fn solve(input: &mut Read, output: &mut Write, verbose: bool) {
         reader.read_line(&mut input).unwrap();
         word_set.insert(String::from(input.trim()));
     }
-    
+
 
     // input_words.sort();
     if verbose {
@@ -472,7 +472,7 @@ fn solve(input: &mut Read, output: &mut Write, verbose: bool) {
     };
 
     // for _ in 0..100 {
-        solver.find_solution();
+    solver.find_solution();
     // }
 
     if solver.result.is_some() {
@@ -681,5 +681,24 @@ c
 
         let res = String::from_utf8(buf).expect("valid string");
         assert_eq!(res, "YES\nabcc\n");
+    }
+    #[test]
+    fn test_run8() {
+        let test = String::from("7
+x
+y
+abxyde
+fgxyhk
+ab
+defg
+hk
+");
+        let testb = test.into_bytes();
+        let mut test_r = testb.as_slice();
+        let mut buf: Vec<u8> = Vec::new();
+        solve(&mut test_r, &mut buf, false);
+
+        let res = String::from_utf8(buf).expect("valid string");
+        assert_eq!(res, "YES\nabxydefgxyhk\n");
     }
 }
