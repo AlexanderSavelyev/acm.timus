@@ -327,8 +327,8 @@ impl Solver {
                 }
                 return;
             }
+            self.usage_tree.add_edge(Some(from.clone()), to.clone());
             self.build_expression(to.clone());
-
             self.usage_tree.remove_node(&to);
         }
 
@@ -358,7 +358,7 @@ impl Solver {
                 return;
             }
 
-            
+            self.usage_tree.add_edge(Some(from.clone()), to.clone());
 
             // {
             //     let (_, cur_word_suffix) = self.input_words
@@ -370,6 +370,7 @@ impl Solver {
             // }
 
             self.build_expression(to.clone());
+            self.usage_tree.remove_node(&to);
             //self.usage_tree.remove_edge(&from, &to);
             // self.res_builder.set_len(cur_length);
         }
@@ -418,7 +419,9 @@ impl Solver {
                     //cur_length = cur_super_word.len();
                     from = UNode::new(sub_idx as u8, sup_idx as u8, cur_pos as u8);
                 }
-                self.build_expression(from);
+                self.usage_tree.add_edge(None, from.clone());
+                self.build_expression(from.clone());
+                self.usage_tree.remove_node(&from)
                 // self.res_builder.set_len(0);
             }
             // self.result.as_ref().map(|w| {
