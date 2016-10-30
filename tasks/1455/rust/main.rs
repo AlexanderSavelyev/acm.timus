@@ -198,14 +198,14 @@ impl UNode {
 #[derive (Default)]
 struct UsageTree {
     // Map from node to parent node
-    parent_map: HashMap<UNode, Option<UNode>>,
+    parent_map: HashMap<UNode, UNode>,
 }
 
 impl UsageTree {
     fn new() -> UsageTree {
         UsageTree::default()
     }
-    pub fn add_edge(&mut self, from: Option<UNode>, to: UNode) {
+    pub fn add_edge(&mut self, from: UNode, to: UNode) {
         self.parent_map.insert(to, from);
     }
     pub fn remove_node(&mut self, n: &UNode) {
@@ -213,6 +213,9 @@ impl UsageTree {
     }
     pub fn contains_node(&self, n: &UNode) -> bool{
         return self.parent_map.contains_key(n);
+    }
+    pub fn get_parent(&self, n: &UNode) -> Option<&UNode> {
+        self.parent_map.get(n)
     }
 
 }
@@ -305,6 +308,19 @@ impl Solver {
             let (_, cur_word) = from_word.split_at(base_from);
 
             if self.prefix_tree.contains_exact(cur_word) {
+                // build result
+                let mut back_rev = Some(&from);
+                while back_rev.is_some() {
+                    {
+                        let child = back_rev.as_ref().unwrap();
+                        if self.verbose {
+                            print!("parent {:?}", child.base_idx);
+                        }
+                    }
+                    back_rev = self.usage_tree.get_parent(back_rev.as_ref().unwrap());
+                }
+
+
                 // if self.result.is_some() && self.result.as_ref().unwrap().len() < self.res_builder.len() {
                 //     return;
                 // }
@@ -327,7 +343,7 @@ impl Solver {
                 }
                 return;
             }
-            self.usage_tree.add_edge(Some(from.clone()), to.clone());
+            self.usage_tree.add_edge(from.clone(), to.clone());
             self.build_expression(to.clone());
             self.usage_tree.remove_node(&to);
         }
@@ -358,7 +374,7 @@ impl Solver {
                 return;
             }
 
-            self.usage_tree.add_edge(Some(from.clone()), to.clone());
+            self.usage_tree.add_edge(from.clone(), to.clone());
 
             // {
             //     let (_, cur_word_suffix) = self.input_words
@@ -419,9 +435,7 @@ impl Solver {
                     //cur_length = cur_super_word.len();
                     from = UNode::new(sub_idx as u8, sup_idx as u8, cur_pos as u8);
                 }
-                self.usage_tree.add_edge(None, from.clone());
                 self.build_expression(from.clone());
-                self.usage_tree.remove_node(&from)
                 // self.res_builder.set_len(0);
             }
             // self.result.as_ref().map(|w| {
@@ -523,7 +537,7 @@ xwz");
         let testb = test.into_bytes();
         let mut test_r = testb.as_slice();
         let mut buf: Vec<u8> = Vec::new();
-        solve(&mut test_r, &mut buf, false);
+        solve(&mut test_r, &mut buf, true);
 
         let res = String::from_utf8(buf).expect("valid string");
         assert_eq!(res, "YES\nabacbabbc\n");
