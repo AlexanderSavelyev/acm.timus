@@ -181,16 +181,16 @@ impl PrefixTree {
 
 #[derive(Hash, Eq, PartialEq, Debug, Clone)]
 struct UNode {
-    pub start_pos: u8,
-    pub base_word: u8,
-    pub sub_word: u8,
+    pub w_idx: u8,
+    pub base_idx: u8,
+    pub base_from: u8,
 }
 impl UNode {
-    fn new(f: u8, b: u8, s: u8) -> UNode {
+    fn new(w_idx: u8, base_idx: u8, base_from:u8) -> UNode {
         UNode {
-            start_pos: f,
-            base_word: b,
-            sub_word: s,
+            w_idx: w_idx,
+            base_idx: base_idx,
+            base_from: base_from,
         }
     }
 }
@@ -295,13 +295,14 @@ impl Solver {
         // let cur_word;
         // let cur_usage_idx;
         // let cur_length;
-        {
-            // cur_length = self.res_builder.len();
-            // cur_usage_idx = cur_length - cur_pos;
 
-            // let cur_word = self.res_builder.split_after(cur_pos);
-            let from_word = &self.input_words[from.base_word];
-            let (_, cur_word) = from_word.split_at(from.start_pos);
+        let base_word = from.base_idx as usize;
+        let base_from = from.base_from as usize;
+
+        // First detect if we can finish
+        {
+            let from_word = &self.input_words[base_word];
+            let (_, cur_word) = from_word.split_at(base_from);
 
             if self.prefix_tree.contains_exact(cur_word) {
                 // if self.result.is_some() && self.result.as_ref().unwrap().len() < self.res_builder.len() {
@@ -317,8 +318,9 @@ impl Solver {
         if self.verbose {
             println!("sub_words {:?}", sub_words);
         }
+        // Next append all sub words to base word
         for (ex_word, w_len) in sub_words {
-            let to = UNode::new(from.start_pos + w_len, from.base_word, ex_word);
+            let to = UNode::new(ex_word, from.base_idx, (base_from + w_len) as u8);
             if self.usage_tree.contains_node(&to) {
                 if self.verbose {
                     println!("already exists node {:?}", to.clone());
@@ -329,30 +331,34 @@ impl Solver {
 
             self.usage_tree.remove_node(&to);
         }
+
+        // Next append all words above base
         let super_words;
         let cur_word_len;
         {
             // let cur_word = self.res_builder.split_after(cur_pos);
             // cur_word_len = cur_word.len();
-            let from_word = &self.input_words[from.base_word];
-            let (_, cur_word) = from_word.split_at(cur_pos);
+            let from_word = &self.input_words[base_word];
+            let (_, cur_word) = from_word.split_at(base_from);
             cur_word_len = cur_word.len();
             super_words = self.prefix_tree.get_words(cur_word);
         }
         if super_words.is_none() {
             return;
         }
-        for cur_big_idx in super_words.unwrap().iter() {
-            let to = UNode::new(from.start_pos, from.base_word, cur_big_idx);
+        for cur_big_idx in super_words.unwrap().iter().map(|w| *w as usize) {
+            let big_word_len = self.input_words
+                                   .get(cur_big_idx)
+                                   .unwrap()
+                                   .len();
+
+            let to = UNode::new(from.base_idx, cur_big_idx as u8, (big_word_len - cur_word_len) as u8);
 
             if self.usage_tree.contains_node(&to) {
                 return;
             }
 
-            let big_word_len = self.input_words
-                                   .get(cur_big_idx)
-                                   .unwrap()
-                                   .len();
+            
 
             // {
             //     let (_, cur_word_suffix) = self.input_words
@@ -363,8 +369,8 @@ impl Solver {
             //     self.res_builder.extend(cur_word_suffix);
             // }
 
-            self.build_expression(big_word_len - cur_word_len, cur_big_idx, to.clone());
-            self.usage_tree.remove_edge(&from, &to);
+            self.build_expression(to.clone());
+            //self.usage_tree.remove_edge(&from, &to);
             // self.res_builder.set_len(cur_length);
         }
     }
@@ -387,30 +393,30 @@ impl Solver {
     pub fn find_solution(&mut self) {
         // let mut total_res: Option<String> = None;
 
-        for idx in 0..self.input_words.len() {
+        for sub_idx in 0..self.input_words.len() {
             let super_words;
             let cur_pos;
             {
-                let cur_word = &self.input_words[idx];
+                let cur_word = &self.input_words[sub_idx];
                 cur_pos = cur_word.len();
                 super_words = self.prefix_tree.get_words(cur_word);
             }
 
             if self.verbose {
-                println!("input = {} super_words {:?}", idx, super_words);
+                println!("input = {} super_words {:?}", sub_idx, super_words);
             }
 
             if super_words.is_none() {
                 continue;
             }
 
-            for sup_idx in super_words.unwrap().iter().map(|w| *w as usize).filter(|w| *w != idx) {
+            for sup_idx in super_words.unwrap().iter().map(|w| *w as usize).filter(|w| *w != sub_idx) {
                 let from: UNode;
                 {
-                    let cur_super_word = self.input_words.get(sup_idx).unwrap();
+                    //let cur_super_word = self.input_words.get(sup_idx).unwrap();
                     // self.res_builder.extend(cur_super_word);
-                    cur_length = cur_super_word.len();
-                    from = Unode::new(cur_length, sup_idx, idx);
+                    //cur_length = cur_super_word.len();
+                    from = UNode::new(sub_idx as u8, sup_idx as u8, cur_pos as u8);
                 }
                 self.build_expression(from);
                 // self.res_builder.set_len(0);
