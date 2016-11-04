@@ -328,7 +328,10 @@ impl Solver {
                 // self.result = Some(self.res_builder.to_string());
                 return;
             }
-
+            if self.verbose {
+                let cw = String::from_utf8_lossy(cur_word);
+                println!("cur word {:?}", cw);
+            }
             sub_words = self.prefix_tree.collect_exact_subwords(cur_word);
         }
         if self.verbose {
@@ -358,6 +361,12 @@ impl Solver {
             let (_, cur_word) = from_word.split_at(base_from);
             cur_word_len = cur_word.len();
             super_words = self.prefix_tree.get_words(cur_word);
+            if self.verbose {
+                let cw = String::from_utf8_lossy(cur_word);
+                println!("super words for cur word {:?}: {:?}", cw, super_words);
+
+            }
+
         }
         if super_words.is_none() {
             return;
@@ -368,7 +377,7 @@ impl Solver {
                                    .unwrap()
                                    .len();
 
-            let to = UNode::new(from.base_idx, cur_big_idx as u8, (big_word_len - cur_word_len) as u8);
+            let to = UNode::new(from.base_idx, cur_big_idx as u8, (big_word_len - cur_word_len - 1) as u8);
 
             if self.usage_tree.contains_node(&to) {
                 return;
@@ -479,7 +488,7 @@ fn solve(input: &mut Read, output: &mut Write, verbose: bool) {
 
     let mut prefix_tree = PrefixTree::new();
 
-    for w in word_set.into_iter().rev() {
+    for w in word_set.into_iter() {
         let idx = input_words.len() as u8;
         prefix_tree.add_word(&w, idx);
         input_words.push(w.into_bytes());
