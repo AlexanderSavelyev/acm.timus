@@ -328,10 +328,10 @@ impl Solver {
                                 res = new_res;
                             }
                         }
-                        if self.verbose {
-                            let cw = String::from_utf8_lossy(res.as_slice());
-                            println!("parent {:?} current res {:?}", child.base_idx, cw);
-                        }
+                        // if self.verbose {
+                        //     let cw = String::from_utf8_lossy(res.as_slice());
+                        //     println!("parent {:?} current res {:?}", child.base_idx, cw);
+                        // }
                     }
                     back_rev = self.usage_tree.get_parent(back_rev.as_ref().unwrap());
                 }
@@ -343,6 +343,9 @@ impl Solver {
 
                 // self.result = Some(self.res_builder.to_string());
                 self.result = Some(String::from_utf8(res).unwrap());
+                if self.verbose {
+                    println!("solution {:?}", self.result);
+                }
                 return;
             }
             
@@ -561,7 +564,7 @@ xwz");
         let testb = test.into_bytes();
         let mut test_r = testb.as_slice();
         let mut buf: Vec<u8> = Vec::new();
-        solve(&mut test_r, &mut buf, true);
+        solve(&mut test_r, &mut buf, false);
 
         let res = String::from_utf8(buf).expect("valid string");
         assert_eq!(res, "YES\nabacbabbc\n");
@@ -646,7 +649,7 @@ bab");
         let testb = test.into_bytes();
         let mut test_r = testb.as_slice();
         let mut buf: Vec<u8> = Vec::new();
-        solve(&mut test_r, &mut buf, false);
+        solve(&mut test_r, &mut buf, true);
 
         let res = String::from_utf8(buf).expect("valid string");
         assert_eq!(res, "YES\nababa\n");
