@@ -282,11 +282,11 @@ impl Solver {
         //    panic!("wrong answer");
         // }
 
-        if self.verbose {
+        // if self.verbose {
             // println!("start build {:?} position {}",
             //          self.res_builder.to_string(),
             //          cur_pos);
-        }
+        // }
 
         // if self.result.is_some() {
         //     return;
@@ -314,7 +314,7 @@ impl Solver {
                     {
                         let child = back_rev.as_ref().unwrap();
                         if self.verbose {
-                            print!("parent {:?}", child.base_idx);
+                            println!("parent {:?}", child.base_idx);
                         }
                     }
                     back_rev = self.usage_tree.get_parent(back_rev.as_ref().unwrap());
@@ -328,14 +328,12 @@ impl Solver {
                 // self.result = Some(self.res_builder.to_string());
                 return;
             }
+            
+            sub_words = self.prefix_tree.collect_exact_subwords(cur_word);
             if self.verbose {
                 let cw = String::from_utf8_lossy(cur_word);
-                println!("cur word {:?}", cw);
+                println!("sub_words for cur word {:?}: {:?}", cw, sub_words);
             }
-            sub_words = self.prefix_tree.collect_exact_subwords(cur_word);
-        }
-        if self.verbose {
-            println!("sub_words {:?}", sub_words);
         }
         // Next append all sub words to base word
         for (ex_word, w_len) in sub_words {
@@ -372,12 +370,12 @@ impl Solver {
             return;
         }
         for cur_big_idx in super_words.unwrap().iter().map(|w| *w as usize) {
-            let big_word_len = self.input_words
-                                   .get(cur_big_idx)
-                                   .unwrap()
-                                   .len();
+            // let big_word_len = self.input_words
+            //                        .get(cur_big_idx)
+            //                        .unwrap()
+            //                        .len();
 
-            let to = UNode::new(from.base_idx, cur_big_idx as u8, (big_word_len - cur_word_len - 1) as u8);
+            let to = UNode::new(from.base_idx, cur_big_idx as u8, cur_word_len as u8);
 
             if self.usage_tree.contains_node(&to) {
                 return;
