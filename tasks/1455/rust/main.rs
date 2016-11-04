@@ -310,22 +310,39 @@ impl Solver {
             if self.prefix_tree.contains_exact(cur_word) {
                 // build result
                 let mut back_rev = Some(&from);
+                let mut c_base = from.base_idx;
+                let mut c_is_base = true;
+                let mut res: Vec<u8> = Vec::new();
+                res.extend_from_slice(from_word);
                 while back_rev.is_some() {
                     {
                         let child = back_rev.as_ref().unwrap();
+                        if child.base_idx != c_base {
+                            c_is_base = !c_is_base;
+                            c_base = child.base_idx;
+                            if c_is_base {
+                                let b_word = &self.input_words[c_base as usize];
+                                let mut new_res: Vec<u8> = Vec::new();
+                                new_res.extend_from_slice(b_word);
+                                new_res.append(&mut res);
+                                res = new_res;
+                            }
+                        }
                         if self.verbose {
-                            println!("parent {:?}", child.base_idx);
+                            let cw = String::from_utf8_lossy(res.as_slice());
+                            println!("parent {:?} current res {:?}", child.base_idx, cw);
                         }
                     }
                     back_rev = self.usage_tree.get_parent(back_rev.as_ref().unwrap());
                 }
 
 
-                // if self.result.is_some() && self.result.as_ref().unwrap().len() < self.res_builder.len() {
-                //     return;
-                // }
+                if self.result.is_some() && self.result.as_ref().unwrap().len() < res.len() {
+                    return;
+                }
 
                 // self.result = Some(self.res_builder.to_string());
+                self.result = Some(String::from_utf8(res).unwrap());
                 return;
             }
             
