@@ -1,7 +1,7 @@
 use std::io::{self, BufReader};
 use std::io::prelude::*;
-use std::collections::{HashMap, BTreeSet, HashSet};
-use std::fs::File;
+use std::collections::{HashMap, BTreeSet};
+// use std::fs::File;
 
 struct Node {
     pub symbol: u8,
@@ -184,13 +184,15 @@ struct UNode {
     pub w_idx: u8,
     pub base_idx: u8,
     pub base_from: u8,
+    pub is_flipped: bool,
 }
 impl UNode {
-    fn new(w_idx: u8, base_idx: u8, base_from:u8) -> UNode {
+    fn new(w_idx: u8, base_idx: u8, base_from:u8, is_flipped: bool) -> UNode {
         UNode {
             w_idx: w_idx,
             base_idx: base_idx,
             base_from: base_from,
+            is_flipped: is_flipped,
         }
     }
 }
@@ -220,18 +222,30 @@ impl UsageTree {
 
 }
 
-// struct ResBuilder {
-//     buf: Vec<u8>,
-//     len: usize,
-// }
+struct ResBuilder {
+    pub words: Vec<u8>,
+    pub len: usize,
+}
 
-// impl ResBuilder {
-//     pub fn new() -> ResBuilder {
-//         ResBuilder {
-//             buf: Vec::new(),
-//             len: 0,
-//         }
-//     }
+impl ResBuilder {
+    pub fn new() -> ResBuilder {
+        ResBuilder {
+            words: Vec::new(),
+            len: 0,
+        }
+    }
+    pub fn to_string(&self, input_words: &Vec<Vec<u8>>) -> String {
+        let mut buf: Vec<u8> = Vec::new();
+        for w in self.words
+                        .iter()
+                        .rev()
+                        .map(|m| *m as usize) {
+            let cw = input_words[w].as_slice();
+            buf.extend_from_slice(cw);
+        }
+        String::from_utf8(buf).unwrap()
+    }
+}
 
 //     pub fn set_len(&mut self, new_len: usize) {
 //         self.len = new_len;
@@ -251,10 +265,7 @@ impl UsageTree {
 //         self.len
 //     }
 
-//     pub fn to_string(&self) -> String {
-//         let (res, _) = self.buf.split_at(self.len);
-//         String::from_utf8_lossy(res).to_string()
-//     }
+//     
 
 //     pub fn split_after<'a>(&'a self, mid: usize) -> &'a [u8] {
 //         let (_, first) = self.buf.split_at(mid);
@@ -267,13 +278,12 @@ struct Solver {
     input_words: Vec<Vec<u8>>,
     prefix_tree: PrefixTree,
     usage_tree: UsageTree,
-    result: Option<String>,
+    result: Option<ResBuilder>,
     verbose: bool,
-    counter: usize,
 }
 
 impl Solver {
-    fn build_expression(&mut self, from: UNode) {
+    fn build_expression(&mut self, from: UNode, possible_len: usize) {
         // self.counter += 1;
         // if self.counter > 300000 {
         //     return;
@@ -287,13 +297,17 @@ impl Solver {
             //          self.res_builder.to_string(),
             //          cur_pos);
         // }
+        if self.verbose {
+            print!("{:<1$}", "", possible_len);
+            println!("build expression {:?}", possible_len);
+        }
 
         // if self.result.is_some() {
         //     return;
         // }
-        if self.should_stop() {
-            return;
-        }
+        // if self.should_stop() {
+        //     return;
+        // }
         let sub_words;
         // let cur_word;
         // let cur_usage_idx;
@@ -309,25 +323,40 @@ impl Solver {
 
             if self.prefix_tree.contains_exact(cur_word) {
                 // build result
+                if self.should_stop(possible_len) {
+                    return;
+                }
                 let mut back_rev = Some(&from);
-                let mut c_base = from.base_idx;
-                let mut c_is_base = true;
-                let mut res: Vec<u8> = Vec::new();
-                res.extend_from_slice(from_word);
+                let mut res = ResBuilder::new();
+                let mut is_base_expected= true;
+                // res.extend_from_slice(from_word);
                 while back_rev.is_some() {
                     {
                         let child = back_rev.as_ref().unwrap();
-                        if child.base_idx != c_base {
-                            c_is_base = !c_is_base;
-                            c_base = child.base_idx;
-                            if c_is_base {
-                                let b_word = &self.input_words[c_base as usize];
-                                let mut new_res: Vec<u8> = Vec::new();
-                                new_res.extend_from_slice(b_word);
-                                new_res.append(&mut res);
-                                res = new_res;
+                        if self.verbose {
+                            print!("{:<1$}", "", possible_len);
+                            println!("{:?}", child);
+                        }
+                        if child.is_flipped {
+                            //res.words.push(child.w_idx);
+                            is_base_expected= true;
+                            // c_base = child.base_idx;
+                            // if c_is_base {
+                            //     let b_word = &self.input_words[c_base as usize];
+                            //     let mut new_res: Vec<u8> = Vec::new();
+                            //     new_res.extend_from_slice(b_word);
+                            //     new_res.append(&mut res);
+                            //     res = new_res;
+                            // }
+                        } else {
+                            if is_base_expected {
+                                res.words.push(child.base_idx);
+                                is_base_expected = false;
                             }
                         }
+                        
+                        // let b_word = &self.input_words[res_word as usize];
+                        
                         // if self.verbose {
                         //     let cw = String::from_utf8_lossy(res.as_slice());
                         //     println!("parent {:?} current res {:?}", child.base_idx, cw);
@@ -337,35 +366,40 @@ impl Solver {
                 }
 
 
-                if self.result.is_some() && self.result.as_ref().unwrap().len() < res.len() {
-                    return;
-                }
+                // if self.result.is_some() && self.result.as_ref().unwrap().len < res.len) {
+                //     return;
+                // }
 
                 // self.result = Some(self.res_builder.to_string());
-                self.result = Some(String::from_utf8(res).unwrap());
                 if self.verbose {
-                    println!("solution {:?}", self.result);
+                    print!("{:<1$}", "", possible_len);
+                    println!("found solution len {:?} {:?} {:?}", possible_len, res.words, res.to_string(&self.input_words));
                 }
+                res.len = possible_len;
+                self.result = Some(res);
+                
                 return;
             }
             
             sub_words = self.prefix_tree.collect_exact_subwords(cur_word);
             if self.verbose {
                 let cw = String::from_utf8_lossy(cur_word);
+                print!("{:<1$}", "", possible_len);
                 println!("sub_words for cur word {:?}: {:?}", cw, sub_words);
             }
         }
         // Next append all sub words to base word
         for (ex_word, w_len) in sub_words {
-            let to = UNode::new(ex_word, from.base_idx, (base_from + w_len) as u8);
+            let to = UNode::new(ex_word, from.base_idx, (base_from + w_len) as u8, from.is_flipped);
             if self.usage_tree.contains_node(&to) {
                 if self.verbose {
+                    print!("{:<1$}", "", possible_len);
                     println!("already exists node {:?}", to.clone());
                 }
                 return;
             }
             self.usage_tree.add_edge(from.clone(), to.clone());
-            self.build_expression(to.clone());
+            self.build_expression(to.clone(), possible_len);
             self.usage_tree.remove_node(&to);
         }
 
@@ -381,6 +415,7 @@ impl Solver {
             super_words = self.prefix_tree.get_words(cur_word);
             if self.verbose {
                 let cw = String::from_utf8_lossy(cur_word);
+                print!("{:<1$}", "", possible_len);
                 println!("super words for cur word {:?}: {:?}", cw, super_words);
 
             }
@@ -389,13 +424,17 @@ impl Solver {
         if super_words.is_none() {
             return;
         }
-        for cur_big_idx in super_words.unwrap().iter().map(|w| *w as usize) {
-            // let big_word_len = self.input_words
-            //                        .get(cur_big_idx)
-            //                        .unwrap()
-            //                        .len();
 
-            let to = UNode::new(from.base_idx, cur_big_idx as u8, cur_word_len as u8);
+        for cur_big_idx in super_words.unwrap().iter().map(|w| *w as usize) {
+            let big_word_len = self.input_words
+                                   .get(cur_big_idx)
+                                   .unwrap()
+                                   .len();
+            let next_len = possible_len + big_word_len - cur_word_len;
+            if self.should_stop(next_len) {
+                continue;
+            }
+            let to = UNode::new(from.base_idx, cur_big_idx as u8, cur_word_len as u8, !from.is_flipped);
 
             if self.usage_tree.contains_node(&to) {
                 return;
@@ -412,16 +451,19 @@ impl Solver {
             //     self.res_builder.extend(cur_word_suffix);
             // }
 
-            self.build_expression(to.clone());
+            self.build_expression(to.clone(), next_len);
             self.usage_tree.remove_node(&to);
             //self.usage_tree.remove_edge(&from, &to);
             // self.res_builder.set_len(cur_length);
         }
     }
 
-    fn should_stop(&self) -> bool {
+    fn should_stop(&self, possible_len: usize) -> bool {
         if self.result.is_some() {
-            let res = self.result.as_ref().unwrap().as_bytes();
+            if self.result.as_ref().unwrap().len < possible_len {
+                return true;
+            }
+            // let res = self.result.as_ref().unwrap().as_bytes();
             // if self.res_builder.len() >= res.len() {
             //     return true;
             // }
@@ -456,13 +498,12 @@ impl Solver {
 
             for sup_idx in super_words.unwrap().iter().map(|w| *w as usize).filter(|w| *w != sub_idx) {
                 let from: UNode;
+                let possible_len;
                 {
-                    //let cur_super_word = self.input_words.get(sup_idx).unwrap();
-                    // self.res_builder.extend(cur_super_word);
-                    //cur_length = cur_super_word.len();
-                    from = UNode::new(sub_idx as u8, sup_idx as u8, cur_pos as u8);
+                    possible_len = self.input_words.get(sup_idx).unwrap().len();
+                    from = UNode::new(sub_idx as u8, sup_idx as u8, cur_pos as u8, false);
                 }
-                self.build_expression(from.clone());
+                self.build_expression(from.clone(), possible_len);
                 // self.res_builder.set_len(0);
             }
             // self.result.as_ref().map(|w| {
@@ -518,7 +559,6 @@ fn solve(input: &mut Read, output: &mut Write, verbose: bool) {
         usage_tree: UsageTree::new(),
         result: None,
         verbose: verbose,
-        counter: 0,
     };
 
     // for _ in 0..100 {
@@ -527,7 +567,7 @@ fn solve(input: &mut Read, output: &mut Write, verbose: bool) {
 
     if solver.result.is_some() {
         writeln!(output, "YES").expect("correct output");
-        writeln!(output, "{}", solver.result.unwrap()).expect("correct output");
+        writeln!(output, "{}", solver.result.unwrap().to_string(&solver.input_words)).expect("correct output");
     } else {
         writeln!(output, "NO").expect("correct output");;
     }
@@ -547,8 +587,6 @@ fn main() {
 mod tests {
     use solve;
     use PrefixTree;
-    use UsageTree;
-    use UNode;
     use std::fs::File;
 
     #[test]
@@ -649,7 +687,7 @@ bab");
         let testb = test.into_bytes();
         let mut test_r = testb.as_slice();
         let mut buf: Vec<u8> = Vec::new();
-        solve(&mut test_r, &mut buf, true);
+        solve(&mut test_r, &mut buf, false);
 
         let res = String::from_utf8(buf).expect("valid string");
         assert_eq!(res, "YES\nababa\n");
