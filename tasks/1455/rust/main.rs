@@ -101,7 +101,7 @@ impl PrefixTree {
         self.node_pool.get(n_idx).unwrap()
     }
 
-    pub fn contains_exact(&self, w: &[u8]) -> bool {
+    pub fn contains_exact(&self, w: &[u8]) -> Option<u8> {
         let cur_node = self.search_path(w);
         if cur_node.is_some() {
             let cn_idx = cur_node.unwrap();
@@ -110,12 +110,12 @@ impl PrefixTree {
                 for n in c_node.nodes.as_ref().unwrap() {
                     let cc_node = self.get_node(*n);
                     if cc_node.symbol == 0 {
-                        return true;
+                        return Some(cc_node.meta);
                     }
                 }
             }
         }
-        return false;
+        return None;
     }
 
     pub fn collect_exact_subwords(&self, prefix: &[u8]) -> Vec<(u8, usize)> {
@@ -321,7 +321,9 @@ impl Solver {
             let from_word = &self.input_words[base_word];
             let (_, cur_word) = from_word.split_at(base_from);
 
-            if self.prefix_tree.contains_exact(cur_word) {
+            let last_exact = self.prefix_tree.contains_exact(cur_word);
+
+            if last_exact.is_some() {
                 // build result
                 if self.should_stop(possible_len) {
                     return;
@@ -329,7 +331,9 @@ impl Solver {
                 let mut back_rev = Some(&from);
                 let mut res = ResBuilder::new();
                 let mut is_base_expected= true;
-                // res.extend_from_slice(from_word);
+                if from.is_flipped {
+                    res.words.push(last_exact.unwrap());
+                }
                 while back_rev.is_some() {
                     {
                         let child = back_rev.as_ref().unwrap();
@@ -338,7 +342,7 @@ impl Solver {
                             println!("{:?}", child);
                         }
                         if child.is_flipped {
-                            //res.words.push(child.w_idx);
+                            // res.words.push(child.w_idx);
                             is_base_expected= true;
                             // c_base = child.base_idx;
                             // if c_is_base {
@@ -649,7 +653,7 @@ xwz");
             assert_eq!(words, None);
         }
         {
-            assert_eq!(tree.contains_exact(b"abac"), true);
+            assert_eq!(tree.contains_exact(b"abac"), Some(3));
         }
 
     }
