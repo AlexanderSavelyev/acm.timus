@@ -297,6 +297,12 @@ impl Solver {
             //          self.res_builder.to_string(),
             //          cur_pos);
         // }
+        if self.result.is_some() {
+            return;
+        }
+        if possible_len > 20000 {
+            return;
+        }
         if self.verbose {
             print!("{:<1$}", "", possible_len);
             println!("build expression {:?}", possible_len);
@@ -308,6 +314,9 @@ impl Solver {
         // if self.should_stop() {
         //     return;
         // }
+        if self.should_stop(possible_len) {
+            return;
+        }
         let sub_words;
         // let cur_word;
         // let cur_usage_idx;
@@ -325,9 +334,7 @@ impl Solver {
 
             if last_exact.is_some() {
                 // build result
-                if self.should_stop(possible_len) {
-                    return;
-                }
+                
                 let mut back_rev = Some(&from);
                 let mut res = ResBuilder::new();
                 let mut is_base_expected= true;
@@ -464,7 +471,7 @@ impl Solver {
 
     fn should_stop(&self, possible_len: usize) -> bool {
         if self.result.is_some() {
-            if self.result.as_ref().unwrap().len < possible_len {
+            if self.result.as_ref().unwrap().len <= possible_len {
                 return true;
             }
             // let res = self.result.as_ref().unwrap().as_bytes();
@@ -551,7 +558,7 @@ fn solve(input: &mut Read, output: &mut Write, verbose: bool) {
 
     let mut prefix_tree = PrefixTree::new();
 
-    for w in word_set.into_iter() {
+    for w in word_set.into_iter().rev() {
         let idx = input_words.len() as u8;
         prefix_tree.add_word(&w, idx);
         input_words.push(w.into_bytes());
