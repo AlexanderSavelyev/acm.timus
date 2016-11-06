@@ -247,33 +247,6 @@ impl ResBuilder {
     }
 }
 
-//     pub fn set_len(&mut self, new_len: usize) {
-//         self.len = new_len;
-//     }
-
-//     pub fn extend(&mut self, part: &[u8]) {
-//         let start_idx = self.len;
-//         self.len += part.len();
-//         while self.buf.len() < self.len {
-//             self.buf.push(0);
-//         }
-//         for i in start_idx..self.len {
-//             self.buf[i] = part[i - start_idx];
-//         }
-//     }
-//     pub fn len(&self) -> usize {
-//         self.len
-//     }
-
-//     
-
-//     pub fn split_after<'a>(&'a self, mid: usize) -> &'a [u8] {
-//         let (_, first) = self.buf.split_at(mid);
-//         let (res, _) = first.split_at(self.len - mid);
-//         return res;
-//     }
-// }
-
 struct Solver {
     input_words: Vec<Vec<u8>>,
     prefix_tree: PrefixTree,
@@ -289,7 +262,7 @@ impl Solver {
         //     return;
         // }
         // if self.res_builder.len() > 2000{
-        //    panic!("wrong answer");
+        //    
         // }
 
         // if self.verbose {
@@ -301,27 +274,17 @@ impl Solver {
             return;
         }
         if possible_len > 20000 {
-            return;
+            panic!("wrong answer");
         }
         if self.verbose {
             print!("{:<1$}", "", possible_len);
             println!("build expression {:?}", possible_len);
         }
 
-        // if self.result.is_some() {
-        //     return;
-        // }
-        // if self.should_stop() {
-        //     return;
-        // }
         if self.should_stop(possible_len) {
             return;
         }
         let sub_words;
-        // let cur_word;
-        // let cur_usage_idx;
-        // let cur_length;
-
         let base_word = from.base_idx as usize;
         let base_from = from.base_from as usize;
 
@@ -349,39 +312,18 @@ impl Solver {
                             println!("{:?}", child);
                         }
                         if child.is_flipped {
-                            // res.words.push(child.w_idx);
                             is_base_expected= true;
-                            // c_base = child.base_idx;
-                            // if c_is_base {
-                            //     let b_word = &self.input_words[c_base as usize];
-                            //     let mut new_res: Vec<u8> = Vec::new();
-                            //     new_res.extend_from_slice(b_word);
-                            //     new_res.append(&mut res);
-                            //     res = new_res;
-                            // }
                         } else {
                             if is_base_expected {
                                 res.words.push(child.base_idx);
                                 is_base_expected = false;
                             }
                         }
-                        
-                        // let b_word = &self.input_words[res_word as usize];
-                        
-                        // if self.verbose {
-                        //     let cw = String::from_utf8_lossy(res.as_slice());
-                        //     println!("parent {:?} current res {:?}", child.base_idx, cw);
-                        // }
                     }
                     back_rev = self.usage_tree.get_parent(back_rev.as_ref().unwrap());
                 }
 
 
-                // if self.result.is_some() && self.result.as_ref().unwrap().len < res.len) {
-                //     return;
-                // }
-
-                // self.result = Some(self.res_builder.to_string());
                 if self.verbose {
                     print!("{:<1$}", "", possible_len);
                     println!("found solution len {:?} {:?} {:?}", possible_len, res.words, res.to_string(&self.input_words));
@@ -418,8 +360,6 @@ impl Solver {
         let super_words;
         let cur_word_len;
         {
-            // let cur_word = self.res_builder.split_after(cur_pos);
-            // cur_word_len = cur_word.len();
             let from_word = &self.input_words[base_word];
             let (_, cur_word) = from_word.split_at(base_from);
             cur_word_len = cur_word.len();
@@ -452,20 +392,8 @@ impl Solver {
             }
 
             self.usage_tree.add_edge(from.clone(), to.clone());
-
-            // {
-            //     let (_, cur_word_suffix) = self.input_words
-            //                                    .get(cur_big_idx as usize)
-            //                                    .unwrap()
-            //                                    .as_bytes()
-            //                                    .split_at(cur_word_len);
-            //     self.res_builder.extend(cur_word_suffix);
-            // }
-
             self.build_expression(to.clone(), next_len);
             self.usage_tree.remove_node(&to);
-            //self.usage_tree.remove_edge(&from, &to);
-            // self.res_builder.set_len(cur_length);
         }
     }
 
@@ -488,8 +416,6 @@ impl Solver {
     }
 
     pub fn find_solution(&mut self) {
-        // let mut total_res: Option<String> = None;
-
         for sub_idx in 0..self.input_words.len() {
             let super_words;
             let cur_pos;
@@ -515,20 +441,8 @@ impl Solver {
                     from = UNode::new(sub_idx as u8, sup_idx as u8, cur_pos as u8, false);
                 }
                 self.build_expression(from.clone(), possible_len);
-                // self.res_builder.set_len(0);
             }
-            // self.result.as_ref().map(|w| {
-            //     if total_res.is_some() {
-            //         if w.len() <= total_res.as_ref().unwrap().len() {
-            //             total_res = Some(w.clone());
-            //         }
-            //     } else {
-            //         total_res = Some(w.clone());
-            //     }
-            // });
-            // self.result = None;
         }
-        // self.result = total_res;
     }
 }
 
