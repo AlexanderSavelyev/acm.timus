@@ -14,18 +14,6 @@ fn solve(input: &mut Read, output: &mut Write) {
         let mut next_line = String::new();
         reader.read_line(&mut next_line).unwrap();
         lines.push(next_line);
-        // println!("{:?}", input);
-
-
-        // let mut s = input.trim().split(' ');
-
-        // let a_str = s.next().unwrap();
-        // let a: i32 = a_str.trim().parse().unwrap();
-
-        // let b_str = s.next().unwrap();
-        // let b: i32 = b_str.trim().parse().unwrap();
-
-        // println!("{} {}", a,b);
     }
     input.clear();
     reader.read_line(&mut input).unwrap();
