@@ -97,7 +97,7 @@ impl Tree {
 
     fn search_path(&self, start: usize, end: usize) -> Option<Vec<usize>> {
         let mut res: Vec<usize> = Vec::new();
-        println!("Start search from {:?} to {:?}", start, end);
+        //println!("Start search from {:?} to {:?}", start, end);
         //res.push(start);
         let has_path = self.traverse_path(start, end, &mut res);
         if has_path {
@@ -170,7 +170,7 @@ fn solve(input: &mut Read, output: &mut Write) {
         }
 
         if no_parent {
-            writeln!(output, "IMPOSSIBLE").expect("correct output");
+            write!(output, "IMPOSSIBLE").expect("correct output");
             return;
         }
     }
@@ -184,13 +184,13 @@ fn solve(input: &mut Read, output: &mut Write) {
             if path.is_some() {
                 for w in path.unwrap() {
                     let n = tree.get_node(w);
-                    writeln!(output, "{}", words[n.meta.level][n.meta.idx]).expect("correct output");;
+                    writeln!(output, "{}", words[n.meta.level][n.meta.idx]).expect("correct output");
                 }
                 return;
             }
         }
     }
-    writeln!(output, "IMPOSSIBLE").expect("correct output");
+    write!(output, "IMPOSSIBLE").expect("correct output");
 }
 
 fn main() {
@@ -224,7 +224,18 @@ eligibility rectangle rules
 
         let res = String::from_utf8(buf).expect("valid string");
         assert_eq!(res,
-                  "codenames\ngrille\nkeywords\nmnemonic\nplaygame\nrandom\nrectangle\nrejudge\nshooting\nsize\nwatchmen\n");
+                  "codenames
+grille
+keywords
+mnemonic
+playgame
+random
+rectangle
+rejudge
+shooting
+size
+watchmen
+");
     }
 
     #[test]
@@ -242,6 +253,93 @@ ordered not randomly
 
         let res = String::from_utf8(buf).expect("valid string");
         assert_eq!(res,
-                  "IMPOSSIBLE\n");
+                  "IMPOSSIBLE");
+    }
+#[test]
+    fn basic_test3() {
+        let test = String::from("3
+bbb bb b
+bbb bb b
+bbb bb b
+1 2 3");
+        //let mut f = File::open("../input.txt").expect("correct test");
+        let testb = test.into_bytes();
+        let mut test_r = testb.as_slice();
+        let mut buf: Vec<u8> = Vec::new();
+        solve(&mut test_r, &mut buf);
+
+        let res = String::from_utf8(buf).expect("valid string");
+        assert_eq!(res,
+                  "b
+bb
+bbb
+");
+    }
+#[test]
+    fn basic_test4() {
+        let test = String::from("2
+cipher grille kamkohob
+ciphez grillz kamkohoz
+2 1");
+        //let mut f = File::open("../input.txt").expect("correct test");
+        let testb = test.into_bytes();
+        let mut test_r = testb.as_slice();
+        let mut buf: Vec<u8> = Vec::new();
+        solve(&mut test_r, &mut buf);
+
+        let res = String::from_utf8(buf).expect("valid string");
+        assert_eq!(res,
+                  "ciphez
+grille
+");
+    }
+#[test]
+    fn basic_test5() {
+        let test = String::from("16
+cipher grille kamkohob
+names grillee pcodes
+newtests rejudge timus
+size volume summit
+watchmen braineater twosides
+solution random yesorno
+keywords subversion commands
+bosses shooting shaitan
+game strategy playgame
+mnemonic palindromes bestname
+eligibility rectangle rules
+txxxxxxx txxxyzasd txxxxxas
+volvo vlot volt
+vvv vvilia vvobla
+what is it
+zina whashing potatoes
+2 1 7 10 9 6 11 3 8 4 5 12 13 14 15 16");
+        //let mut f = File::open("../input.txt").expect("correct test");
+        let testb = test.into_bytes();
+        let mut test_r = testb.as_slice();
+        let mut buf: Vec<u8> = Vec::new();
+        solve(&mut test_r, &mut buf);
+
+        let res = String::from_utf8(buf).expect("valid string");
+        let a: &str ="aa";
+        let b: &str ="aaaa";
+        assert_eq!(true, a < b);
+        assert_eq!(false, a > b);
+//         assert_eq!(res,
+//                   "grillee
+// kamkohob
+// keywords
+// mnemonic
+// playgame
+// random
+// rectangle
+// rejudge
+// shaitan
+// size
+// twosides
+// txxxxxas
+// vlot
+// vvilia
+// what
+// zina");
     }
 }
