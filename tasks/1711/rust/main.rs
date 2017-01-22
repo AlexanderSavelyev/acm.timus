@@ -152,17 +152,18 @@ fn solve(input: &mut Read, output: &mut Write) {
         word_nodes[n_level].resize(n_w.len(), 0);
         let mut no_parent = true;
         for idx in 0 .. w.len() {
+            if level == 0 {
+                word_nodes[level][idx] = tree.insert_node(Meta{level:level, idx: idx});
+                tree.insert_edge(root, word_nodes[level][idx]);
+            }
+            if word_nodes[level][idx] == 0 {
+                continue;
+            }
             for n_idx in 0 .. n_w.len() {
-                if w[idx] < n_w[n_idx] {
+                if w[idx].as_str() < n_w[n_idx].as_str() {
                     no_parent = false;
-                    if word_nodes[level][idx] == 0 {
-                        word_nodes[level][idx] = tree.insert_node(Meta{level:level, idx: idx});
-                    }
                     if word_nodes[n_level][n_idx] == 0 {
                         word_nodes[n_level][n_idx] = tree.insert_node(Meta{level:n_level, idx: n_idx});
-                    }
-                    if level == 0 {
-                        tree.insert_edge(root, word_nodes[level][idx]);
                     }
                     tree.insert_edge(word_nodes[level][idx], word_nodes[n_level][n_idx]);
                 }
@@ -324,22 +325,23 @@ zina whashing potatoes
         let b: &str ="aaaa";
         assert_eq!(true, a < b);
         assert_eq!(false, a > b);
-//         assert_eq!(res,
-//                   "grillee
-// kamkohob
-// keywords
-// mnemonic
-// playgame
-// random
-// rectangle
-// rejudge
-// shaitan
-// size
-// twosides
-// txxxxxas
-// vlot
-// vvilia
-// what
-// zina");
+        assert_eq!(res,
+                  "grillee
+kamkohob
+keywords
+mnemonic
+playgame
+random
+rectangle
+rejudge
+shooting
+size
+twosides
+txxxxxxx
+volvo
+vvv
+what
+zina
+");
     }
 }
