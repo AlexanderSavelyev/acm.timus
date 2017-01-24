@@ -71,7 +71,8 @@ impl DBitset {
         }
         return true;
     }
-    fn or_with(&mut self, set: &DBitset) {
+    fn or_with(&mut self, set: &DBitset) -> bool {
+        let mut changed = false;
         if self.words_in_use < set.words_in_use {
             self.words_in_use = set.words_in_use;
         }
@@ -79,8 +80,13 @@ impl DBitset {
             self.words.resize(self.words_in_use, 0);
         }
         for i in 0..self.words_in_use {
+            let w = self.words[i];
             self.words[i] |= set.words[i];
+            if w != self.words[i] {
+                changed = true;
+            }
         }
+        return changed;
     }
 
     fn least_significant_bit_position(m: u64) -> Option<usize> {
@@ -196,6 +202,21 @@ fn solve(input: &mut Read, output: &mut Write) {
         reactions.push(r);
         // println!("{:?}", right_str);
         // let a: i32 = a_str.trim().parse().unwrap();
+    }
+    let mut changed = true;
+    while changed {
+        changed = false;
+        for r in &reactions {
+            if r.left.is_subset_of(&cell) {
+                changed |= cell.or_with(&r.right);
+            }
+        }
+    }
+    let mut bit = cell.next_set_bit(0);
+    while bit.is_some() {
+        let b = bit.unwrap();
+        println!("{:?}", b);
+        bit = cell.next_set_bit(b + 1);
     }
 
 
