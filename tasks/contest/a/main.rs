@@ -1,5 +1,6 @@
 use std::io::{self, BufReader};
 use std::io::prelude::*;
+use std::collections::{HashSet, HashMap};
 #[allow(dead_code)]
 const ADDRESS_BITS_PER_WORD: u16 = 6;
 #[allow(dead_code)]
@@ -12,7 +13,7 @@ struct DBitset {
     length: usize,
     words: Vec<u64>,
 }
-#[allow(dead_code)]
+#[allow(dead_code,unused_parens)]
 impl DBitset {
     fn word_index(nbits: usize) -> usize {
         nbits >> ADDRESS_BITS_PER_WORD
@@ -64,6 +65,9 @@ impl DBitset {
 
     }
     fn is_subset_of(&self, set: &DBitset) -> bool {
+        if self.words_in_use > set.words_in_use {
+            return false;
+        }
         for i in 0..self.words_in_use {
             if (self.words[i] & (!set.words[i])) != 0 {
                 return false;
@@ -167,75 +171,98 @@ impl Reaction {
         }
     }
 }
+#[derive (Default)]
+struct ChemMap {
+    chem_map_orig: HashMap<usize, usize>,
+    chem_map: Vec<usize>,
+}
+
+impl ChemMap {
+    fn get(&mut self, k: usize) ->usize {
+        let res: usize;
+        match self.chem_map_orig.get(&k) {
+            Some(v) => { return *v},
+            None => {
+                res = self.chem_map.len();
+                self.chem_map.push(k);
+            }
+        }
+        self.chem_map_orig.insert(k, res);
+        return res;
+    }
+    fn get_orig(&self, v: usize)->usize {
+        return self.chem_map[v];
+    }
+}
 
 fn solve(input: &mut Read, output: &mut Write) {
     let mut reader = BufReader::new(input);
     let mut input = String::new();
-
-    reader.read_line(&mut input).unwrap();
     // let mut chemicals: Vec<usize> = Vec::new();
     let mut cell = DBitset::new(1024);
     let mut reactions: Vec<Reaction> = Vec::new();
+    let mut reaction_iter:HashSet<usize> = HashSet::new();
+    let mut chem_map = ChemMap::default();
+
+    reader.read_line(&mut input).unwrap();
+
 
     for nc in input.trim().split(' ') {
         let n: usize = nc.trim().parse().unwrap();
-        cell.set(n);
+        let v = chem_map.get(n);
+        cell.set(v);
         // chemicals.push(n);
     }
     // println!("{:?}", chemicals);
     // let n: i32 = input.trim().parse().unwrap();
     for reaction in reader.lines().map(|r| r.unwrap()) {
-        println!("{:?}", reaction);
+        //println!("{:?}", reaction);
         let mut r = Reaction::new();
         let mut parts = reaction.trim().split("->");
 
         let left_str = parts.next().unwrap();
         for lc in left_str.trim().split('+').map(|r| r.trim()) {
             let ln: usize = lc.parse().unwrap();
-            r.left.set(ln);
+            let v = chem_map.get(ln);
+            r.left.set(v);
         }
         let right_str = parts.next().unwrap();
         for lc in right_str.trim().split('+').map(|r| r.trim()) {
             let ln: usize = lc.parse().unwrap();
-            r.right.set(ln);
+            let v = chem_map.get(ln);
+            r.right.set(v);
         }
+        reaction_iter.insert(reactions.len());
         reactions.push(r);
         // println!("{:?}", right_str);
         // let a: i32 = a_str.trim().parse().unwrap();
     }
+    let mut to_remove: Vec<usize> = Vec::new();
     let mut changed = true;
     while changed {
         changed = false;
-        for r in &reactions {
+        for tr in &to_remove {
+            reaction_iter.remove(tr);
+        }
+        to_remove.clear();
+        for ri in &reaction_iter {
+            let r = &reactions[*ri];
             if r.left.is_subset_of(&cell) {
                 changed |= cell.or_with(&r.right);
+                to_remove.push(*ri);
             }
         }
     }
     let mut bit = cell.next_set_bit(0);
     while bit.is_some() {
         let b = bit.unwrap();
-        println!("{:?}", b);
+        let v = chem_map.get_orig(b);
+        write!(output, "{:?}", v).expect("correct output");
         bit = cell.next_set_bit(b + 1);
+        if bit.is_some() {
+            write!(output, " ").expect("correct output");
+        }
     }
-
-
-    // for _ in 0..n {
-    //     input.clear();
-    //     reader.read_line(&mut input).unwrap();
-    //     println!("{:?}", input);
-    // let mut s = input.trim().split(' ');
-
-    // let a_str = s.next().unwrap();
-    // let a: i32 = a_str.trim().parse().unwrap();
-
-    // let b_str = s.next().unwrap();
-    // let b: i32 = b_str.trim().parse().unwrap();
-
-    // println!("{} {}", a,b);
-    // }
-
-    // println!("{}", n);
 
 
 }
@@ -246,7 +273,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use std::fs::File;
+    // use std::fs::File;
     use solve;
     use DBitset;
 
@@ -321,11 +348,22 @@ mod tests {
         solve(&mut test_r, &mut buf);
 
         let res = String::from_utf8(buf).expect("valid string");
-        // assert_eq!(res,
-        //                   "2297.0716
-        // 936297014.1164
-        // 0.0000
-        // 37.7757
-        // ");
+        assert_eq!(res, "4 6 1 5");
+    }
+    #[test]
+    fn basic_test2() {
+        let test = String::from("1 2
+1+2->4
+1+2->3
+3->4+5
+4->4");
+        // let mut f = File::open("../input.txt").expect("correct test");
+        let testb = test.into_bytes();
+        let mut test_r = testb.as_slice();
+        let mut buf: Vec<u8> = Vec::new();
+        solve(&mut test_r, &mut buf);
+
+        let res = String::from_utf8(buf).expect("valid string");
+        assert_eq!(res, "1 2 4 3 5");
     }
 }
