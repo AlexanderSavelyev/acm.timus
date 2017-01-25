@@ -157,6 +157,7 @@ impl DBitset {
         return Some(bit + lbit.unwrap());
     }
 }
+const MAX_BITS: usize = 100000;
 
 struct Reaction {
     left: DBitset,
@@ -166,8 +167,8 @@ struct Reaction {
 impl Reaction {
     fn new() -> Reaction {
         Reaction {
-            left: DBitset::new(1024),
-            right: DBitset::new(1024),
+            left: DBitset::new(MAX_BITS),
+            right: DBitset::new(MAX_BITS),
         }
     }
 }
@@ -187,6 +188,9 @@ impl ChemMap {
                 self.chem_map.push(k);
             }
         }
+        if res > MAX_BITS {
+            panic!("too big");
+        }
         self.chem_map_orig.insert(k, res);
         return res;
     }
@@ -199,7 +203,7 @@ fn solve(input: &mut Read, output: &mut Write) {
     let mut reader = BufReader::new(input);
     let mut input = String::new();
     // let mut chemicals: Vec<usize> = Vec::new();
-    let mut cell = DBitset::new(1024);
+    let mut cell = DBitset::new(MAX_BITS);
     let mut reactions: Vec<Reaction> = Vec::new();
     let mut reaction_iter:HashSet<usize> = HashSet::new();
     let mut chem_map = ChemMap::default();
