@@ -172,13 +172,19 @@ impl Reaction {
         }
     }
 }
-#[derive (Default)]
+
 struct ChemMap {
     chem_map_orig: HashMap<usize, usize>,
     chem_map: Vec<usize>,
 }
 
 impl ChemMap {
+    fn new()->ChemMap {
+        ChemMap {
+         chem_map_orig: HashMap::new(),
+         chem_map:Vec::with_capacity(MAX_BITS), 
+        }
+    }
     fn get(&mut self, k: usize) ->usize {
         let res: usize;
         match self.chem_map_orig.get(&k) {
@@ -204,9 +210,9 @@ fn solve(input: &mut Read, output: &mut Write) {
     let mut input = String::new();
     // let mut chemicals: Vec<usize> = Vec::new();
     let mut cell = DBitset::new(MAX_BITS);
-    let mut reactions: Vec<Reaction> = Vec::new();
+    let mut reactions: Vec<Reaction> = Vec::with_capacity(10000);
     let mut reaction_iter:HashSet<usize> = HashSet::new();
-    let mut chem_map = ChemMap::default();
+    let mut chem_map = ChemMap::new();
 
     reader.read_line(&mut input).unwrap();
 
@@ -219,30 +225,36 @@ fn solve(input: &mut Read, output: &mut Write) {
     }
     // println!("{:?}", chemicals);
     // let n: i32 = input.trim().parse().unwrap();
+   
     for reaction in reader.lines().map(|r| r.unwrap()) {
         //println!("{:?}", reaction);
+        // if chem_map.chem_map.len() > 10000 {
+        //     continue;
+        // }
         let mut r = Reaction::new();
-        let mut parts = reaction.trim().split("->");
+        let mut parts = reaction.split("->");
 
         let left_str = parts.next().unwrap();
-        for lc in left_str.trim().split('+').map(|r| r.trim()) {
+        for lc in left_str.split('+') {
             let ln: usize = lc.parse().unwrap();
             let v = chem_map.get(ln);
             r.left.set(v);
         }
         let right_str = parts.next().unwrap();
-        for lc in right_str.trim().split('+').map(|r| r.trim()) {
+        for lc in right_str.split('+') {
             let ln: usize = lc.parse().unwrap();
             let v = chem_map.get(ln);
             r.right.set(v);
         }
-        reaction_iter.insert(reactions.len());
+        reaction_iter.insert(reactions.len()); 
         reactions.push(r);
         // println!("{:?}", right_str);
         // let a: i32 = a_str.trim().parse().unwrap();
     }
     let mut to_remove: Vec<usize> = Vec::new();
     let mut changed = true;
+    //if chem_map.chem_map.len() > 40000 {panic!("get here");}
+
     while changed {
         changed = false;
         for tr in &to_remove {
@@ -256,7 +268,9 @@ fn solve(input: &mut Read, output: &mut Write) {
                 to_remove.push(*ri);
             }
         }
+        
     }
+    
     let mut bit = cell.next_set_bit(0);
     while bit.is_some() {
         let b = bit.unwrap();
