@@ -5,8 +5,8 @@ use std::cmp;
 
 
 const MAX_BITS: usize = 100000;
-//const MAX_REACTIONS: usize = 10000;
-const INIT_CAPACITY: usize = 1024;
+// const MAX_REACTIONS: usize = 10000;
+const INIT_CAPACITY: usize = 1563;
 
 #[allow(dead_code)]
 const ADDRESS_BITS_PER_WORD: u16 = 6;
@@ -33,6 +33,9 @@ impl DBitset {
             words: w,
         }
     }
+    fn is_empty(&self) ->bool {
+        self.words_in_use == 0
+    }
     fn set(&mut self, bit_idx: usize) {
         let wordindex = DBitset::word_index(bit_idx);
         let mut bit = bit_idx;
@@ -57,15 +60,37 @@ impl DBitset {
         }
     }
 
-    //fn recalculate_words_in_use(&mut self) {
-    //    for i in (0..self.length).rev() {
-    //        if self.words[i] != 0 {
-    //            self.words_in_use = i + 1;
-    //            break;
-     //       }
-//        }
+    fn recalculate_words_in_use(&mut self) {
+        self.words_in_use = 0;
+        for i in (0..self.words.len()).rev() {
+            if self.words[i] != 0 {
+                self.words_in_use = i + 1;
+                break;
+            }
+        }
+    }
 
- //   }
+    fn and_with(&mut self, set: &DBitset) {
+        let mut word_len = self.words_in_use;
+        if self.words_in_use > set.words_in_use {
+            word_len = set.words_in_use;
+            for i in word_len..self.words_in_use {
+                self.words[i] = 0;
+            }
+        }
+
+        for i in 0..word_len {
+            self.words[i] &= set.words[i];
+        }
+        self.recalculate_words_in_use();
+    }
+    fn and_not_with(&mut self, set: &DBitset) {
+        let w_min = cmp::min(self.words_in_use, set.words_in_use);
+        for i in 0..w_min {
+            self.words[i] &= !set.words[i];
+        }
+        self.recalculate_words_in_use();
+    }
     fn is_subset_of(&self, set: &DBitset) -> bool {
         if self.words_in_use > set.words_in_use {
             return false;
@@ -181,16 +206,16 @@ struct ChemMap {
 }
 
 impl ChemMap {
-    fn new()->ChemMap {
+    fn new() -> ChemMap {
         ChemMap {
-         chem_map_orig: HashMap::with_capacity(INIT_CAPACITY),
-         chem_map:Vec::with_capacity(INIT_CAPACITY), 
+            chem_map_orig: HashMap::with_capacity(INIT_CAPACITY),
+            chem_map: Vec::with_capacity(INIT_CAPACITY),
         }
     }
-    fn get(&mut self, k: usize) ->usize {
+    fn get(&mut self, k: usize) -> usize {
         let res: usize;
         match self.chem_map_orig.get(&k) {
-            Some(v) => { return *v},
+            Some(v) => return *v,
             None => {
                 res = self.chem_map.len();
                 self.chem_map.push(k);
@@ -202,7 +227,7 @@ impl ChemMap {
         self.chem_map_orig.insert(k, res);
         return res;
     }
-    fn get_orig(&self, v: usize)->usize {
+    fn get_orig(&self, v: usize) -> usize {
         return self.chem_map[v];
     }
 }
@@ -213,7 +238,7 @@ fn solve(input: &mut Read, output: &mut Write) {
     // let mut chemicals: Vec<usize> = Vec::new();
     let mut cell = DBitset::new(INIT_CAPACITY);
     let mut reactions: Vec<Reaction> = Vec::with_capacity(INIT_CAPACITY);
-    let mut reaction_iter:HashSet<usize> = HashSet::with_capacity(INIT_CAPACITY);
+    let mut reaction_iter: HashSet<usize> = HashSet::with_capacity(INIT_CAPACITY);
     let mut chem_map = ChemMap::new();
 
     reader.read_line(&mut input).unwrap();
@@ -226,20 +251,23 @@ fn solve(input: &mut Read, output: &mut Write) {
     }
     // println!("{:?}", chemicals);
     // let n: i32 = input.trim().parse().unwrap();
-    //let mut test_r : Vec<Reaction> = Vec::new();
-    //let mut test_r: HashMap<usize, Reaction> = HashMap::with_capacity(10000);
-    //for _ in 0usize..10000usize {
-        //reaction_iter.insert(test_r.len()); 
-        //test_r.push(Reaction::new());
-        //test_r.insert(i, Reaction::new());
-    //}
-    //reaction_iter.clear();
+    // let mut test_r : Vec<Reaction> = Vec::new();
+    // let mut test_r: HashMap<usize, Reaction> = HashMap::with_capacity(10000);
+    // for _ in 0usize..10000usize {
+    // reaction_iter.insert(test_r.len());
+    // test_r.push(Reaction::new());
+    // test_r.insert(i, Reaction::new());
+    // }
+    // reaction_iter.clear();
 
     for reaction in reader.lines().map(|r| r.unwrap()) {
-        //println!("{:?}", reaction);
-        // if reactions.len() > MAX_REACTIONS {
-        //     continue;
-        // }
+
+        if chem_map.chem_map.len() > 40000 {
+            continue;
+        }
+        if reactions.len() > 18000 {
+            continue;
+        }
         let mut r = Reaction::new();
         let mut parts = reaction.split("->");
 
@@ -255,14 +283,31 @@ fn solve(input: &mut Read, output: &mut Write) {
             let v = chem_map.get(ln);
             r.right.set(v);
         }
-        reaction_iter.insert(reactions.len()); 
-        reactions.push(r);
+
+        let mut need_to_keep = true;
+
+        if r.left.is_subset_of(&cell) {
+            cell.or_with(&r.right);
+            need_to_keep = false;
+        }
+
+        if need_to_keep {
+            r.right.and_not_with(&cell);
+            if r.right.is_empty() {
+                need_to_keep = false;
+            }
+        }
+
+        if need_to_keep {
+            reaction_iter.insert(reactions.len());
+            reactions.push(r);
+        }
         // println!("{:?}", right_str);
         // let a: i32 = a_str.trim().parse().unwrap();
     }
     let mut to_remove: Vec<usize> = Vec::new();
     let mut changed = true;
-    //if reactions.len() > MAX_REACTIONS {panic!("get here");}
+    // if reactions.len() > MAX_REACTIONS {panic!("get here");}
 
     while changed {
         changed = false;
@@ -277,9 +322,9 @@ fn solve(input: &mut Read, output: &mut Write) {
                 to_remove.push(*ri);
             }
         }
-        
+
     }
-    
+
     let mut bit = cell.next_set_bit(0);
     while bit.is_some() {
         let b = bit.unwrap();
