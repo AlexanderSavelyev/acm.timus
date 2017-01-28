@@ -1,6 +1,13 @@
 use std::io::{self, BufReader};
 use std::io::prelude::*;
 use std::collections::{HashSet, HashMap};
+use std::cmp;
+
+
+const MAX_BITS: usize = 100000;
+//const MAX_REACTIONS: usize = 10000;
+const INIT_CAPACITY: usize = 1024;
+
 #[allow(dead_code)]
 const ADDRESS_BITS_PER_WORD: u16 = 6;
 #[allow(dead_code)]
@@ -10,7 +17,6 @@ const WORD_MASK: u64 = 0xFFFFFFFFFFFFFFFF;
 #[allow(dead_code)]
 struct DBitset {
     words_in_use: usize,
-    length: usize,
     words: Vec<u64>,
 }
 #[allow(dead_code,unused_parens)]
@@ -22,12 +28,8 @@ impl DBitset {
         let l = DBitset::word_index(nbits - 1) + 1;
         let mut w = Vec::with_capacity(l);
         w.resize(l, 0);
-        // for _ in 0..l {
-        //     w.push(0);
-        // }
         DBitset {
             words_in_use: 0,
-            length: l,
             words: w,
         }
     }
@@ -55,15 +57,15 @@ impl DBitset {
         }
     }
 
-    fn recalculate_words_in_use(&mut self) {
-        for i in (0..self.length).rev() {
-            if self.words[i] != 0 {
-                self.words_in_use = i + 1;
-                break;
-            }
-        }
+    //fn recalculate_words_in_use(&mut self) {
+    //    for i in (0..self.length).rev() {
+    //        if self.words[i] != 0 {
+    //            self.words_in_use = i + 1;
+    //            break;
+     //       }
+//        }
 
-    }
+ //   }
     fn is_subset_of(&self, set: &DBitset) -> bool {
         if self.words_in_use > set.words_in_use {
             return false;
@@ -83,7 +85,8 @@ impl DBitset {
         if self.words.len() < self.words_in_use {
             self.words.resize(self.words_in_use, 0);
         }
-        for i in 0..self.words_in_use {
+        let w_min = cmp::min(self.words_in_use, set.words_in_use);
+        for i in 0..w_min {
             let w = self.words[i];
             self.words[i] |= set.words[i];
             if w != self.words[i] {
@@ -138,7 +141,6 @@ impl DBitset {
             return None;
         }
         from_idx -= (u << ADDRESS_BITS_PER_WORD);
-
         let mut word = self.words[u] & (WORD_MASK << from_idx);
         while word == 0 {
             u += 1;
@@ -157,7 +159,7 @@ impl DBitset {
         return Some(bit + lbit.unwrap());
     }
 }
-const MAX_BITS: usize = 100000;
+
 
 struct Reaction {
     left: DBitset,
@@ -167,8 +169,8 @@ struct Reaction {
 impl Reaction {
     fn new() -> Reaction {
         Reaction {
-            left: DBitset::new(MAX_BITS),
-            right: DBitset::new(MAX_BITS),
+            left: DBitset::new(INIT_CAPACITY),
+            right: DBitset::new(INIT_CAPACITY),
         }
     }
 }
@@ -181,8 +183,8 @@ struct ChemMap {
 impl ChemMap {
     fn new()->ChemMap {
         ChemMap {
-         chem_map_orig: HashMap::new(),
-         chem_map:Vec::with_capacity(MAX_BITS), 
+         chem_map_orig: HashMap::with_capacity(INIT_CAPACITY),
+         chem_map:Vec::with_capacity(INIT_CAPACITY), 
         }
     }
     fn get(&mut self, k: usize) ->usize {
@@ -209,9 +211,9 @@ fn solve(input: &mut Read, output: &mut Write) {
     let mut reader = BufReader::new(input);
     let mut input = String::new();
     // let mut chemicals: Vec<usize> = Vec::new();
-    let mut cell = DBitset::new(MAX_BITS);
-    let mut reactions: Vec<Reaction> = Vec::with_capacity(10000);
-    let mut reaction_iter:HashSet<usize> = HashSet::new();
+    let mut cell = DBitset::new(INIT_CAPACITY);
+    let mut reactions: Vec<Reaction> = Vec::with_capacity(INIT_CAPACITY);
+    let mut reaction_iter:HashSet<usize> = HashSet::with_capacity(INIT_CAPACITY);
     let mut chem_map = ChemMap::new();
 
     reader.read_line(&mut input).unwrap();
@@ -221,14 +223,21 @@ fn solve(input: &mut Read, output: &mut Write) {
         let n: usize = nc.trim().parse().unwrap();
         let v = chem_map.get(n);
         cell.set(v);
-        // chemicals.push(n);
     }
     // println!("{:?}", chemicals);
     // let n: i32 = input.trim().parse().unwrap();
-   
+    //let mut test_r : Vec<Reaction> = Vec::new();
+    //let mut test_r: HashMap<usize, Reaction> = HashMap::with_capacity(10000);
+    //for _ in 0usize..10000usize {
+        //reaction_iter.insert(test_r.len()); 
+        //test_r.push(Reaction::new());
+        //test_r.insert(i, Reaction::new());
+    //}
+    //reaction_iter.clear();
+
     for reaction in reader.lines().map(|r| r.unwrap()) {
         //println!("{:?}", reaction);
-        // if chem_map.chem_map.len() > 10000 {
+        // if reactions.len() > MAX_REACTIONS {
         //     continue;
         // }
         let mut r = Reaction::new();
@@ -253,7 +262,7 @@ fn solve(input: &mut Read, output: &mut Write) {
     }
     let mut to_remove: Vec<usize> = Vec::new();
     let mut changed = true;
-    //if chem_map.chem_map.len() > 40000 {panic!("get here");}
+    //if reactions.len() > MAX_REACTIONS {panic!("get here");}
 
     while changed {
         changed = false;
@@ -275,7 +284,7 @@ fn solve(input: &mut Read, output: &mut Write) {
     while bit.is_some() {
         let b = bit.unwrap();
         let v = chem_map.get_orig(b);
-        write!(output, "{:?}", v).expect("correct output");
+        write!(output, "{}", v).expect("correct output");
         bit = cell.next_set_bit(b + 1);
         if bit.is_some() {
             write!(output, " ").expect("correct output");
@@ -349,6 +358,53 @@ mod tests {
         bit = b.next_set_bit(bit.unwrap() + 1);
         assert_eq!(None, bit);
 
+        // println!("{:?}", b.next_set_bit(0));
+    }
+    #[test]
+    fn test_bitset5() {
+        let mut b = DBitset::new(1024);
+        b.set(0);
+        b.set(1);
+        b.set(5);
+        b.set(6);
+        b.set(200);
+        b.set(10000);
+        b.set(50000);
+        let mut bit = b.next_set_bit(0);
+        assert_eq!(Some(0), bit);
+        bit = b.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(1), bit);
+        bit = b.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(5), bit);
+        bit = b.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(6), bit);
+        bit = b.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(200), bit);
+        bit = b.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(10000), bit);
+        bit = b.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(50000), bit);
+        bit = b.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(None, bit);
+        let mut b2 = DBitset::new(1024);
+        b2.or_with(&b);
+
+        bit = b2.next_set_bit(0);
+        assert_eq!(Some(0), bit);
+        bit = b2.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(1), bit);
+        bit = b2.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(5), bit);
+        bit = b2.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(6), bit);
+        bit = b2.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(200), bit);
+        bit = b2.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(10000), bit);
+        bit = b2.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(50000), bit);
+        bit = b2.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(None, bit);
         // println!("{:?}", b.next_set_bit(0));
     }
 
