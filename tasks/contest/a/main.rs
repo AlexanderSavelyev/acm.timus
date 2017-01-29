@@ -43,6 +43,15 @@ impl DBitset {
         self.expand_to(wordindex);
         self.words[wordindex] |= (1u64 << bit);
     }
+    fn setc(&mut self, bit_idx: usize) ->bool {
+        let wordindex = DBitset::word_index(bit_idx);
+        let mut bit = bit_idx;
+        bit -= (wordindex << ADDRESS_BITS_PER_WORD);
+        self.expand_to(wordindex);
+        let w = self.words[wordindex];
+        self.words[wordindex] |= (1u64 << bit);
+        return w != self.words[wordindex];
+    }
 
     fn get(&self, bit_idx: usize) -> bool {
         let word_index = DBitset::word_index(bit_idx);
@@ -190,6 +199,11 @@ struct Reaction {
     left: DBitset,
     right: DBitset,
 }
+#[derive(Default)]
+struct ReactionBit {
+    left:Vec<u32>,
+    right: Vec<u32>, 
+}
 
 impl Reaction {
     fn new() -> Reaction {
@@ -238,12 +252,30 @@ impl ChemMap {
     }
 }
 
+fn is_subset(s: &Vec<u32>, bs: &DBitset) -> bool {
+    for b in s {
+        if !bs.get(*b as usize) {
+            return false;
+        }
+    }
+    return true;
+}
+
+fn set_all(s: &Vec<u32>, bs: &mut DBitset) -> bool{
+    let mut changed = false;
+    for b in s {
+        changed |= bs.setc(*b as usize);
+    }
+    return changed;
+}
+
 fn solve(input: &mut Read, output: &mut Write) {
     let mut reader = BufReader::new(input);
     let mut input = String::new();
     // let mut chemicals: Vec<usize> = Vec::new();
     let mut cell = DBitset::new(INIT_CAPACITY);
     let mut reactions: Vec<Reaction> = Vec::with_capacity(INIT_CAPACITY);
+    let mut reaction_bits: Vec<ReactionBit> = Vec::with_capacity(INIT_CAPACITY);
     let mut reaction_iter: HashSet<usize> = HashSet::with_capacity(INIT_CAPACITY);
     let mut chem_map = ChemMap::new();
 
@@ -268,45 +300,51 @@ fn solve(input: &mut Read, output: &mut Write) {
 
     for reaction in reader.lines().map(|r| r.unwrap()) {
 
-        if chem_map.chem_map.len() > 40000 {
-            continue;
-        }
-        if reactions.len() > 18000 {
-            continue;
-        }
-        let mut r = Reaction::new();
+        // if chem_map.chem_map.len() > 40000 {
+        //     continue;
+        // }
+        // if reactions.len() > 18000 {
+        //     continue;
+        // }
+        // let mut r = Reaction::new();
+        let mut r_b = ReactionBit::default();
         let mut parts = reaction.split("->");
 
         let left_str = parts.next().unwrap();
         for lc in left_str.split('+') {
             let ln: u32 = lc.parse().unwrap();
             let v = chem_map.get(ln);
-            r.left.set(v as usize);
+            // r.left.set(v as usize);
+            r_b.left.push(v);
         }
         let right_str = parts.next().unwrap();
         for lc in right_str.split('+') {
             let ln: u32 = lc.parse().unwrap();
             let v = chem_map.get(ln);
-            r.right.set(v as usize);
+            // r.right.set(v as usize);
+            r_b.right.push(v);
         }
 
         let mut need_to_keep = true;
 
-        if r.left.is_subset_of(&cell) {
-            cell.or_with(&r.right);
+        // if r.left.is_subset_of(&cell) {
+        if is_subset(&r_b.left, &cell) {
+            // cell.or_with(&r.right);
+            set_all(&r_b.right, &mut cell);
             need_to_keep = false;
         }
 
-        if need_to_keep {
-            r.right.and_not_with(&cell);
-            if r.right.is_empty() {
-                need_to_keep = false;
-            }
-        }
+        // if need_to_keep {
+        //     r.right.and_not_with(&cell);
+        //     if r.right.is_empty() {
+        //         need_to_keep = false;
+        //     }
+        // }
 
         if need_to_keep {
-            reaction_iter.insert(reactions.len());
-            reactions.push(r);
+            reaction_iter.insert(reaction_bits.len());
+            // reactions.push(r);
+            reaction_bits.push(r_b);
         }
         // println!("{:?}", right_str);
         // let a: i32 = a_str.trim().parse().unwrap();
@@ -315,6 +353,19 @@ fn solve(input: &mut Read, output: &mut Write) {
     let mut changed = true;
     // if reactions.len() > MAX_REACTIONS {panic!("get here");}
 
+    // while changed {
+    //     changed = false;
+    //     for tr in &to_remove {
+    //         reaction_iter.remove(tr);
+    //     }
+    //     to_remove.clear();
+    //     for ri in &reaction_iter {
+    //         let r = &reactions[*ri];
+    //         if r.left.is_subset_of(&cell) {
+    //             changed |= cell.or_with(&r.right);
+    //             to_remove.push(*ri);
+    //         }
+    //     }
     while changed {
         changed = false;
         for tr in &to_remove {
@@ -322,13 +373,12 @@ fn solve(input: &mut Read, output: &mut Write) {
         }
         to_remove.clear();
         for ri in &reaction_iter {
-            let r = &reactions[*ri];
-            if r.left.is_subset_of(&cell) {
-                changed |= cell.or_with(&r.right);
+            let r = &reaction_bits[*ri];
+            if is_subset(&r.left, &cell) {
+                changed |= set_all(&r.right, &mut cell);
                 to_remove.push(*ri);
             }
         }
-
     }
 
     let mut bit = cell.next_set_bit(0);
@@ -346,8 +396,9 @@ fn solve(input: &mut Read, output: &mut Write) {
 }
 
 fn main() {
-    test_mem();
-    //solve(&mut io::stdin(), &mut io::stdout());
+    // test_mem();
+    // create_big_test();
+    solve(&mut io::stdin(), &mut io::stdout());
     
 }
 
