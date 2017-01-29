@@ -4,8 +4,8 @@ use std::collections::{HashSet, HashMap};
 use std::cmp;
 
 
-const MAX_BITS: usize = 100000;
-// const MAX_REACTIONS: usize = 10000;
+const MAX_BITS: u32 = 100000;
+const MAX_REACTIONS: usize = 50000;
 const INIT_CAPACITY: usize = 1563;
 
 #[allow(dead_code)]
@@ -201,8 +201,8 @@ impl Reaction {
 }
 
 struct ChemMap {
-    chem_map_orig: HashMap<usize, usize>,
-    chem_map: Vec<usize>,
+    chem_map_orig: HashMap<u32, u32>,
+    chem_map: Vec<u32>,
 }
 
 impl ChemMap {
@@ -212,12 +212,12 @@ impl ChemMap {
             chem_map: Vec::with_capacity(INIT_CAPACITY),
         }
     }
-    fn get(&mut self, k: usize) -> usize {
-        let res: usize;
+    fn get(&mut self, k: u32) -> u32 {
+        let res: u32;
         match self.chem_map_orig.get(&k) {
             Some(v) => return *v,
             None => {
-                res = self.chem_map.len();
+                res = self.chem_map.len() as u32;
                 self.chem_map.push(k);
             }
         }
@@ -227,8 +227,8 @@ impl ChemMap {
         self.chem_map_orig.insert(k, res);
         return res;
     }
-    fn get_orig(&self, v: usize) -> usize {
-        return self.chem_map[v];
+    fn get_orig(&self, v: u32) -> u32 {
+        return self.chem_map[v as usize];
     }
 }
 
@@ -245,9 +245,9 @@ fn solve(input: &mut Read, output: &mut Write) {
 
 
     for nc in input.trim().split(' ') {
-        let n: usize = nc.trim().parse().unwrap();
+        let n: u32 = nc.trim().parse().unwrap();
         let v = chem_map.get(n);
-        cell.set(v);
+        cell.set(v as usize);
     }
     // println!("{:?}", chemicals);
     // let n: i32 = input.trim().parse().unwrap();
@@ -273,15 +273,15 @@ fn solve(input: &mut Read, output: &mut Write) {
 
         let left_str = parts.next().unwrap();
         for lc in left_str.split('+') {
-            let ln: usize = lc.parse().unwrap();
+            let ln: u32 = lc.parse().unwrap();
             let v = chem_map.get(ln);
-            r.left.set(v);
+            r.left.set(v as usize);
         }
         let right_str = parts.next().unwrap();
         for lc in right_str.split('+') {
-            let ln: usize = lc.parse().unwrap();
+            let ln: u32 = lc.parse().unwrap();
             let v = chem_map.get(ln);
-            r.right.set(v);
+            r.right.set(v as usize);
         }
 
         let mut need_to_keep = true;
@@ -328,7 +328,7 @@ fn solve(input: &mut Read, output: &mut Write) {
     let mut bit = cell.next_set_bit(0);
     while bit.is_some() {
         let b = bit.unwrap();
-        let v = chem_map.get_orig(b);
+        let v = chem_map.get_orig(b as u32);
         write!(output, "{}", v).expect("correct output");
         bit = cell.next_set_bit(b + 1);
         if bit.is_some() {
@@ -340,7 +340,28 @@ fn solve(input: &mut Read, output: &mut Write) {
 }
 
 fn main() {
-    solve(&mut io::stdin(), &mut io::stdout());
+    test_mem();
+    //solve(&mut io::stdin(), &mut io::stdout());
+    
+}
+
+fn test_mem() {
+    let mut chem_map = ChemMap::new();
+    let mut x = 0;
+    for i in 0..MAX_BITS {
+        let v= chem_map.get(i);
+        x = v;
+    }
+    // let mut reactions: Vec<Reaction> = Vec::with_capacity(INIT_CAPACITY);
+    // let mut reaction_iter: HashSet<usize> = HashSet::with_capacity(INIT_CAPACITY);
+    // for i in 0..MAX_REACTIONS {
+    //     reaction_iter.insert(i);
+    //     let mut r = Reaction::new();
+    //     r.left.set(MAX_BITS);
+    //     r.right.set(MAX_BITS);
+    //     //reactions.push(r);
+    // }
+    println!("{:?}", x);
 }
 
 #[cfg(test)]
