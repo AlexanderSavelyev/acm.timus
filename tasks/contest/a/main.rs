@@ -2,10 +2,12 @@ use std::io::{self, BufReader};
 use std::io::prelude::*;
 use std::collections::{HashSet, HashMap};
 use std::cmp;
+// use std::hash::{Hash, Hasher};
+// extern crate time;
 
 
 const MAX_BITS: u32 = 100000;
-const MAX_REACTIONS: usize = 8000;
+const MAX_REACTIONS: usize = 0;
 const INIT_CAPACITY: usize = 1563;
 
 #[allow(dead_code)]
@@ -233,7 +235,16 @@ impl ChemMap {
         }
     }
     fn get(&mut self, k: u32) -> u32 {
+         if k > MAX_BITS {
+            panic!("big {}", k);
+         }
+        return k;
+    }
+    fn get1(&mut self, k: u32) -> u32 {
         let res: u32;
+         if k > MAX_BITS {
+            panic!("big {}", k);
+         }
         match self.chem_map_orig.get(&k) {
             Some(v) => return *v,
             None => {
@@ -248,6 +259,9 @@ impl ChemMap {
         return res;
     }
     fn get_orig(&self, v: u32) -> u32 {
+        return v;
+    }
+    fn get_orig1(&self, v: u32) -> u32 {
         return self.chem_map[v as usize];
     }
 }
@@ -278,6 +292,8 @@ fn solve(input: &mut Read, output: &mut Write) {
     let mut reaction_bits: Vec<ReactionBit> = Vec::with_capacity(INIT_CAPACITY);
     let mut reaction_iter: HashSet<usize> = HashSet::with_capacity(INIT_CAPACITY);
     let mut chem_map = ChemMap::new();
+
+    // let mut n = time::precise_time_ns();
 
     reader.read_line(&mut input).unwrap();
 
@@ -316,6 +332,7 @@ fn solve(input: &mut Read, output: &mut Write) {
             let v = chem_map.get(ln);
             // r.left.set(v as usize);
             r_b.left.push(v);
+
         }
         let right_str = parts.next().unwrap();
         for lc in right_str.split('+') {
@@ -343,12 +360,21 @@ fn solve(input: &mut Read, output: &mut Write) {
 
         if need_to_keep {
             reaction_iter.insert(reaction_bits.len());
+            if r_b.left.len() > 1000 {
+                panic!("len > 1000 {}", r_b.left.len());
+            }
+            if r_b.right.len() > 1000 {
+                panic!("len > 1000 {}", r_b.right.len());
+            }
             // reactions.push(r);
             reaction_bits.push(r_b);
         }
         // println!("{:?}", right_str);
         // let a: i32 = a_str.trim().parse().unwrap();
     }
+
+    // n = time::precise_time_ns() - n;
+    // println!("\nRead time = {:?} ms", n / 1000000);
 
     let mut to_remove: Vec<usize> = Vec::new();
     let mut changed = true;
@@ -361,6 +387,7 @@ fn solve(input: &mut Read, output: &mut Write) {
             // }
             // to_remove.clear();
             for ri in (0..reaction_bits.len()).rev() {
+            // for ri in &reaction_iter {
                 if !reaction_iter.contains(&ri) {
                     continue;
                 }
@@ -436,7 +463,10 @@ fn solve(input: &mut Read, output: &mut Write) {
 fn main() {
     // test_mem();
     // create_big_test();
+    // let mut n = time::precise_time_ns();
     solve(&mut io::stdin(), &mut io::stdout());
+    // n = time::precise_time_ns() - n;
+    // println!("\nTotal time = {:?} ms", n / 1000000);
 
 }
 #[allow(dead_code)]
