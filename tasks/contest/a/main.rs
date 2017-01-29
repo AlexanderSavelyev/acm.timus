@@ -5,7 +5,7 @@ use std::cmp;
 
 
 const MAX_BITS: u32 = 100000;
-const MAX_REACTIONS: u32 = 8000;
+const MAX_REACTIONS: usize = 8000;
 const INIT_CAPACITY: usize = 1563;
 
 #[allow(dead_code)]
@@ -33,7 +33,7 @@ impl DBitset {
             words: w,
         }
     }
-    fn is_empty(&self) ->bool {
+    fn is_empty(&self) -> bool {
         self.words_in_use == 0
     }
     fn set(&mut self, bit_idx: usize) {
@@ -43,7 +43,7 @@ impl DBitset {
         self.expand_to(wordindex);
         self.words[wordindex] |= (1u64 << bit);
     }
-    fn setc(&mut self, bit_idx: usize) ->bool {
+    fn setc(&mut self, bit_idx: usize) -> bool {
         let wordindex = DBitset::word_index(bit_idx);
         let mut bit = bit_idx;
         bit -= (wordindex << ADDRESS_BITS_PER_WORD);
@@ -201,8 +201,8 @@ struct Reaction {
 }
 #[derive(Default)]
 struct ReactionBit {
-    left:Vec<u32>,
-    right: Vec<u32>, 
+    left: Vec<u32>,
+    right: Vec<u32>,
 }
 
 impl Reaction {
@@ -261,7 +261,7 @@ fn is_subset(s: &Vec<u32>, bs: &DBitset) -> bool {
     return true;
 }
 
-fn set_all(s: &Vec<u32>, bs: &mut DBitset) -> bool{
+fn set_all(s: &Vec<u32>, bs: &mut DBitset) -> bool {
     let mut changed = false;
     for b in s {
         changed |= bs.setc(*b as usize);
@@ -350,41 +350,74 @@ fn solve(input: &mut Read, output: &mut Write) {
         // let a: i32 = a_str.trim().parse().unwrap();
     }
 
-    // let mut to_remove: Vec<usize> = Vec::new();
+    let mut to_remove: Vec<usize> = Vec::new();
     let mut changed = true;
-    // if reactions.len() > MAX_REACTIONS {panic!("get here");}
 
-    // while changed {
-    //     changed = false;
-    //     for tr in &to_remove {
-    //         reaction_iter.remove(tr);
-    //     }
-    //     to_remove.clear();
-    //     for ri in &reaction_iter {
-    //         let r = &reactions[*ri];
-    //         if r.left.is_subset_of(&cell) {
-    //             changed |= cell.or_with(&r.right);
-    //             to_remove.push(*ri);
-    //         }
-    //     }
-    while changed {
-        changed = false;
-        // for tr in &to_remove {
-        //     reaction_iter.remove(tr);
-        // }
-        // to_remove.clear();
-        for ri in (0..reaction_bits.len()).rev() {
-            if !reaction_iter.contains(&ri) {
-                continue;
+    if reaction_iter.len() >= MAX_REACTIONS {
+        while changed {
+            changed = false;
+            // for tr in &to_remove {
+            //     reaction_iter.remove(tr);
+            // }
+            // to_remove.clear();
+            for ri in (0..reaction_bits.len()).rev() {
+                if !reaction_iter.contains(&ri) {
+                    continue;
+                }
+                let r = &reaction_bits[ri];
+                if is_subset(&r.left, &cell) {
+                    changed |= set_all(&r.right, &mut cell);
+                    // to_remove.push(*ri);
+                    reaction_iter.remove(&ri);
+                }
             }
-            let r = &reaction_bits[ri];
-            if is_subset(&r.left, &cell) {
-                changed |= set_all(&r.right, &mut cell);
-                // to_remove.push(*ri);
-                reaction_iter.remove(&ri);
+            if reaction_iter.len() < MAX_REACTIONS {
+                break;
             }
         }
     }
+
+    if changed {
+        for ri in &reaction_iter {
+            let rb = &reaction_bits[*ri];
+            let mut r = Reaction::new();
+            for b in &rb.right {
+                r.right.set(*b as usize)
+            }
+            r.right.and_not_with(&cell);
+            if r.right.is_empty() {
+                continue;
+            }
+            for b in &rb.left {
+                r.left.set(*b as usize);
+            }
+            reactions.push(r);
+        }
+        reaction_iter.clear();
+        for i in 0..reactions.len() {
+            reaction_iter.insert(i);
+        }
+    }
+    while changed {
+        changed = false;
+        for tr in &to_remove {
+            reaction_iter.remove(tr);
+        }
+        to_remove.clear();
+        for ri in &reaction_iter {
+            let r = &mut reactions[*ri];
+            r.right.and_not_with(&cell);
+            if r.right.is_empty() {
+                to_remove.push(*ri);
+                continue;
+            }
+            if r.left.is_subset_of(&cell) {
+                changed |= cell.or_with(&r.right);
+                to_remove.push(*ri);
+            }
+        }
+    }
+
 
     let mut bit = cell.next_set_bit(0);
     while bit.is_some() {
@@ -404,20 +437,20 @@ fn main() {
     // test_mem();
     // create_big_test();
     solve(&mut io::stdin(), &mut io::stdout());
-    
+
 }
 #[allow(dead_code)]
 fn test_mem() {
     let mut chem_map = ChemMap::new();
     let mut x = 0;
     for i in 0..MAX_BITS {
-        let v= chem_map.get(i);
+        let v = chem_map.get(i);
         x = v;
     }
     let mut reactions: Vec<Reaction> = Vec::with_capacity(INIT_CAPACITY);
     let mut reaction_iter: HashSet<u32> = HashSet::with_capacity(INIT_CAPACITY);
     for i in 0..MAX_REACTIONS {
-        reaction_iter.insert(i);
+        reaction_iter.insert(i as u32);
         let mut r = Reaction::with_capacity(MAX_BITS as usize);
         r.left.set(MAX_BITS as usize);
         r.right.set(MAX_BITS as usize);
