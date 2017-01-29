@@ -5,7 +5,7 @@ use std::cmp;
 
 
 const MAX_BITS: u32 = 100000;
-const MAX_REACTIONS: usize = 50000;
+const MAX_REACTIONS: u32 = 8000;
 const INIT_CAPACITY: usize = 1563;
 
 #[allow(dead_code)]
@@ -198,6 +198,12 @@ impl Reaction {
             right: DBitset::new(INIT_CAPACITY),
         }
     }
+    fn with_capacity(n: usize) -> Reaction {
+        Reaction {
+            left: DBitset::new(n),
+            right: DBitset::new(n),
+        }
+    }
 }
 
 struct ChemMap {
@@ -352,16 +358,17 @@ fn test_mem() {
         let v= chem_map.get(i);
         x = v;
     }
-    // let mut reactions: Vec<Reaction> = Vec::with_capacity(INIT_CAPACITY);
-    // let mut reaction_iter: HashSet<usize> = HashSet::with_capacity(INIT_CAPACITY);
-    // for i in 0..MAX_REACTIONS {
-    //     reaction_iter.insert(i);
-    //     let mut r = Reaction::new();
-    //     r.left.set(MAX_BITS);
-    //     r.right.set(MAX_BITS);
-    //     //reactions.push(r);
-    // }
+    let mut reactions: Vec<Reaction> = Vec::with_capacity(INIT_CAPACITY);
+    let mut reaction_iter: HashSet<u32> = HashSet::with_capacity(INIT_CAPACITY);
+    for i in 0..MAX_REACTIONS {
+        reaction_iter.insert(i);
+        let mut r = Reaction::with_capacity(MAX_BITS as usize);
+        r.left.set(MAX_BITS as usize);
+        r.right.set(MAX_BITS as usize);
+        reactions.push(r);
+    }
     println!("{:?}", x);
+    println!("{:?} {:?}", reaction_iter.len(), reactions.len());
 }
 
 #[cfg(test)]
