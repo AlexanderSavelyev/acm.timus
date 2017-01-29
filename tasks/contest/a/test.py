@@ -2,12 +2,12 @@ import random
 
 print(random.uniform(0, 25))
 
-max_r = 30000
+max_r = 50000
 max_c = 100000
 
-maxc_in_r = 500
+maxc_in_r = 5
 
-with open("test3.txt", "w") as f:
+with open("test4.txt", "w") as f:
 	nextc_len = int(random.uniform(1, maxc_in_r))
 	for c in range(0, nextc_len):
 		if c != 0:
