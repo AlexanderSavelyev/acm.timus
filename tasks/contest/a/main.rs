@@ -349,7 +349,8 @@ fn solve(input: &mut Read, output: &mut Write) {
         // println!("{:?}", right_str);
         // let a: i32 = a_str.trim().parse().unwrap();
     }
-    let mut to_remove: Vec<usize> = Vec::new();
+
+    // let mut to_remove: Vec<usize> = Vec::new();
     let mut changed = true;
     // if reactions.len() > MAX_REACTIONS {panic!("get here");}
 
@@ -368,15 +369,19 @@ fn solve(input: &mut Read, output: &mut Write) {
     //     }
     while changed {
         changed = false;
-        for tr in &to_remove {
-            reaction_iter.remove(tr);
-        }
-        to_remove.clear();
-        for ri in &reaction_iter {
-            let r = &reaction_bits[*ri];
+        // for tr in &to_remove {
+        //     reaction_iter.remove(tr);
+        // }
+        // to_remove.clear();
+        for ri in (0..reaction_bits.len()).rev() {
+            if !reaction_iter.contains(&ri) {
+                continue;
+            }
+            let r = &reaction_bits[ri];
             if is_subset(&r.left, &cell) {
                 changed |= set_all(&r.right, &mut cell);
-                to_remove.push(*ri);
+                // to_remove.push(*ri);
+                reaction_iter.remove(&ri);
             }
         }
     }
@@ -401,7 +406,7 @@ fn main() {
     solve(&mut io::stdin(), &mut io::stdout());
     
 }
-
+#[allow(dead_code)]
 fn test_mem() {
     let mut chem_map = ChemMap::new();
     let mut x = 0;
