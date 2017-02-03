@@ -297,7 +297,6 @@ fn solve(input: &mut Read, output: &mut Write) {
 
     reader.read_line(&mut input).unwrap();
 
-
     for nc in input.trim().split(' ') {
         let n: u32 = nc.trim().parse().unwrap();
         let v = chem_map.get(n);
@@ -313,6 +312,9 @@ fn solve(input: &mut Read, output: &mut Write) {
     // test_r.insert(i, Reaction::new());
     // }
     // reaction_iter.clear();
+
+    let mut forward: Vec<usize> = Vec::with_capacity(INIT_CAPACITY);
+    let mut reverse: Vec<usize> = Vec::with_capacity(INIT_CAPACITY);
 
     for reaction in reader.lines().map(|r| r.unwrap()) {
 
@@ -359,7 +361,8 @@ fn solve(input: &mut Read, output: &mut Write) {
         // }
 
         if need_to_keep {
-            reaction_iter.insert(reaction_bits.len());
+            // reaction_iter.insert(reaction_bits.len());
+            forward.push(reaction_bits.len());
             if r_b.left.len() > 1000 {
                 panic!("len > 1000 {}", r_b.left.len());
             }
@@ -368,6 +371,7 @@ fn solve(input: &mut Read, output: &mut Write) {
             }
             // reactions.push(r);
             reaction_bits.push(r_b);
+            
         }
         // println!("{:?}", right_str);
         // let a: i32 = a_str.trim().parse().unwrap();
@@ -375,75 +379,113 @@ fn solve(input: &mut Read, output: &mut Write) {
 
     // n = time::precise_time_ns() - n;
     // println!("\nRead time = {:?} ms", n / 1000000);
+    // n = time::precise_time_ns();
 
-    let mut to_remove: Vec<usize> = Vec::new();
+    // let mut to_remove: Vec<usize> = Vec::new();
     let mut changed = true;
 
-    if reaction_iter.len() >= MAX_REACTIONS {
+    let mut move_forward = true;
+
+    let mut r_times = 0;
+    // if reaction_iter.len() >= MAX_REACTIONS {
         while changed {
+            r_times +=1;
             changed = false;
             // for tr in &to_remove {
             //     reaction_iter.remove(tr);
             // }
             // to_remove.clear();
-            for ri in (0..reaction_bits.len()).rev() {
+            // for tr in &to_remove {
+            //     reaction_iter.remove(tr);
+            // }
+            
+            // to_remove.clear();
+            // for ri in (0..reaction_bits.len()).rev() {
             // for ri in &reaction_iter {
-                if !reaction_iter.contains(&ri) {
-                    continue;
+            loop {
+                let ri;
+                {
+                    let ri_op: Option<usize>;
+                    if move_forward {
+                        ri_op = forward.pop();
+                    } else {
+                        ri_op = reverse.pop();
+                    }
+                    
+                    if ri_op.is_none() {
+                        break;
+                    } else {
+                        ri = ri_op.unwrap();
+                    }
                 }
+
+                // if !reaction_iter.contains(&ri) {
+                //     continue;
+                // }
                 let r = &reaction_bits[ri];
                 if is_subset(&r.left, &cell) {
                     changed |= set_all(&r.right, &mut cell);
                     // to_remove.push(*ri);
-                    reaction_iter.remove(&ri);
+                    // reaction_iter.remove(&ri);
+                } else {
+                    if move_forward {
+                        reverse.push(ri);
+                    } else {
+                        forward.push(ri);
+                    }
                 }
             }
-            if reaction_iter.len() < MAX_REACTIONS {
-                break;
-            }
+            move_forward = !move_forward;
+            // if reaction_iter.len() < MAX_REACTIONS {
+            //     break;
+            // }
         }
-    }
+    // }
 
-    if changed {
-        for ri in &reaction_iter {
-            let rb = &reaction_bits[*ri];
-            let mut r = Reaction::new();
-            for b in &rb.right {
-                r.right.set(*b as usize)
-            }
-            r.right.and_not_with(&cell);
-            if r.right.is_empty() {
-                continue;
-            }
-            for b in &rb.left {
-                r.left.set(*b as usize);
-            }
-            reactions.push(r);
-        }
-        reaction_iter.clear();
-        for i in 0..reactions.len() {
-            reaction_iter.insert(i);
-        }
-    }
-    while changed {
-        changed = false;
-        for tr in &to_remove {
-            reaction_iter.remove(tr);
-        }
-        to_remove.clear();
-        for ri in &reaction_iter {
-            let r = &mut reactions[*ri];
-            r.right.and_not_with(&cell);
-            if r.right.is_empty() {
-                to_remove.push(*ri);
-                continue;
-            }
-            if r.left.is_subset_of(&cell) {
-                changed |= cell.or_with(&r.right);
-                to_remove.push(*ri);
-            }
-        }
-    }
+    // if changed {
+    //     println!("What ");
+    //     for ri in &reaction_iter {
+    //         let rb = &reaction_bits[*ri];
+    //         let mut r = Reaction::new();
+    //         for b in &rb.right {
+    //             r.right.set(*b as usize)
+    //         }
+    //         r.right.and_not_with(&cell);
+    //         if r.right.is_empty() {
+    //             continue;
+    //         }
+    //         for b in &rb.left {
+    //             r.left.set(*b as usize);
+    //         }
+    //         reactions.push(r);
+    //     }
+    //     reaction_iter.clear();
+    //     for i in 0..reactions.len() {
+    //         reaction_iter.insert(i);
+    //     }
+    // }
+    // while changed {
+    //     changed = false;
+    //     for tr in &to_remove {
+    //         reaction_iter.remove(tr);
+    //     }
+    //     to_remove.clear();
+    //     for ri in &reaction_iter {
+    //         let r = &mut reactions[*ri];
+    //         r.right.and_not_with(&cell);
+    //         if r.right.is_empty() {
+    //             to_remove.push(*ri);
+    //             continue;
+    //         }
+    //         if r.left.is_subset_of(&cell) {
+    //             changed |= cell.or_with(&r.right);
+    //             to_remove.push(*ri);
+    //         }
+    //     }
+    // }
+
+    // n = time::precise_time_ns() - n;
+    // println!("\nCalculate  time = {:?} ms", n / 1000000);
 
 
     let mut bit = cell.next_set_bit(0);
@@ -456,6 +498,7 @@ fn solve(input: &mut Read, output: &mut Write) {
             write!(output, " ").expect("correct output");
         }
     }
+    // println!("\nTimes {:?}",  r_times);
 
 
 }
