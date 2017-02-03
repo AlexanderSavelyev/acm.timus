@@ -288,9 +288,9 @@ fn solve(input: &mut Read, output: &mut Write) {
     let mut input = String::new();
     // let mut chemicals: Vec<usize> = Vec::new();
     let mut cell = DBitset::new(INIT_CAPACITY);
-    let mut reactions: Vec<Reaction> = Vec::with_capacity(INIT_CAPACITY);
+    // let mut reactions: Vec<Reaction> = Vec::with_capacity(INIT_CAPACITY);
     let mut reaction_bits: Vec<ReactionBit> = Vec::with_capacity(INIT_CAPACITY);
-    let mut reaction_iter: HashSet<usize> = HashSet::with_capacity(INIT_CAPACITY);
+    // let mut reaction_iter: HashSet<usize> = HashSet::with_capacity(INIT_CAPACITY);
     let mut chem_map = ChemMap::new();
 
     // let mut n = time::precise_time_ns();
@@ -386,10 +386,10 @@ fn solve(input: &mut Read, output: &mut Write) {
 
     let mut move_forward = true;
 
-    let mut r_times = 0;
+    // let mut r_times = 0;
     // if reaction_iter.len() >= MAX_REACTIONS {
         while changed {
-            r_times +=1;
+            // r_times +=1;
             changed = false;
             // for tr in &to_remove {
             //     reaction_iter.remove(tr);
