@@ -193,7 +193,7 @@ impl Solver {
 }
 
 
-fn solve(input: &mut Read, output: &mut Write, verbose: bool) {
+fn solve1(input: &mut Read, output: &mut Write, verbose: bool) {
     let mut reader = BufReader::new(input);
     let mut input = String::new();
 
@@ -246,6 +246,118 @@ fn solve(input: &mut Read, output: &mut Write, verbose: bool) {
     } else {
         write!(output, "imperfect").expect("correct output");
     }
+
+}
+
+fn solve(input: &mut Read, output: &mut Write, verbose: bool) {
+    let mut reader = BufReader::new(input);
+    let mut input = String::new();
+
+    reader.read_line(&mut input).unwrap();
+    let lbytes = input.trim().as_bytes();
+    let rna_len = lbytes.len();
+    let mut rna: Vec<u8> = Vec::with_capacity(rna_len);
+    rna.resize(rna_len, 0);
+
+    for i in 0..lbytes.len() {
+        match lbytes[i] {
+            b'A' => {
+                rna[i] = ADENINE;
+            }
+            b'U' => {
+                rna[i] = URACIL;
+            }
+            b'C' => {
+                rna[i] = CYTOSINE;
+            }
+            b'G' => {
+                rna[i] = GUANINE;
+            }
+            _ => panic!("unknown {}", lbytes[i]),
+        }
+    }
+
+    let mut rna_stack:Vec<u8> = Vec::with_capacity(rna_len);
+    rna_stack.resize(rna_len, 0);
+    let mut stack_len = 0usize;
+    if rna_len % 2 == 0 {
+        for i in 0 .. rna.len() {
+            if stack_len == 0 {
+                rna_stack[stack_len] = rna[i];
+                stack_len += 1;
+                continue;
+            }
+
+            if rna[i] & rna_stack[stack_len - 1] == 0 {
+                stack_len -= 1;
+            } else {
+                rna_stack[stack_len] = rna[i];
+                stack_len += 1;
+            }
+        }
+
+        if stack_len == 0 {
+            write!(output, "perfect").expect("correct output");
+        } else {
+            write!(output, "imperfect").expect("correct output");
+        }
+    } else {
+        for i in 0 .. rna.len() {
+            if stack_len == 0 {
+                rna_stack[stack_len] = rna[i];
+                stack_len += 1;
+                continue;
+            }
+
+            if rna[i] & rna_stack[stack_len - 1] == 0 {
+                stack_len -= 1;
+            } else {
+                rna_stack[stack_len] = rna[i];
+                stack_len += 1;
+            }
+        }
+
+        if stack_len % 2 == 0 {
+            write!(output, "imperfect").expect("correct output");
+        } else {
+            if stack_len == 1 {
+                write!(output, "almost perfect").expect("correct output");
+                return;
+            }
+            let start = stack_len / 2 + 1;
+            let mut last = stack_len / 2 - 1;
+            for i in start .. stack_len {
+                if rna_stack[i] & rna_stack[last] == 0 {
+                    if last > 0 {
+                        last -= 1;
+                    }
+                } else {
+                    write!(output, "imperfect").expect("correct output");
+                    return;
+                }
+            }
+            write!(output, "almost perfect").expect("correct output");
+        }
+        
+        
+    }
+
+    // if !solver.is_possible(0, rna_len -1 , almost) {
+    //     write!(output, "imperfect").expect("correct output");
+    //     return; 
+    // }
+
+    // let is_perfect = solver.is_perfect(0, rna_len -1, almost);
+
+    // if is_perfect {
+    //     if almost {
+    //         write!(output, "almost perfect").expect("correct output");
+    //     } else {
+    //         write!(output, "perfect").expect("correct output");
+    //     }
+    // } else {
+    //     write!(output, "imperfect").expect("correct output");
+    // }
 
 }
 
