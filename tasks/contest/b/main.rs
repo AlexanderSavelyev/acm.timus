@@ -6,6 +6,8 @@ const URACIL: u8 = 6;
 const CYTOSINE: u8 = 5;
 const GUANINE: u8 = 10;
 
+static mut counter:usize = 0;
+static mut level: usize = 0;
 
 struct Solver {
     rna: Vec<u8>,
@@ -40,17 +42,45 @@ impl Solver {
 
     fn is_perfect(&self, from:usize, to: usize, almost: bool) -> bool {
         if self.verbose {
+            unsafe {print!("{:<1$}", "", level);}
             println!("is_perfect from = {:?} to = {:?} almost = {:?}", from, to, almost);
+        }
+        unsafe {
+            counter += 1;
+            level += 1;
+            if counter > 10000 {
+                // return false;
+                panic!("too much");
+            }
         }
         // if to >= self.rna.len() {
         //     return true;
         // }
+        if from > to {
+            panic!("from > to");
+        }
         let cnt: i32 = to as i32 - from as i32 + 1;
         if cnt <= 0 {
-            return true;
+            panic!("from > to");
+        }
+
+        if cnt % 2 == 0 && almost {
+            panic!("almost for even");
+        }
+        if cnt % 2 != 0 && !almost {
+            panic!("not almost for odd");
         }
         if cnt == 1 {
+            unsafe {
+                level -=1;
+            }
             return almost;
+        }
+        if cnt == 2 {
+            unsafe {
+                level -=1;
+            }
+            return self.rna[from] & self.rna[to] == 0
         }
         let mut from_idx = from;
         let mut right_len;
@@ -76,23 +106,31 @@ impl Solver {
                     left_almost = false;
                     right_almost = false;
                 }
-                if !self.is_possible(from_idx + 1, to_idx - 1, left_almost) {
+                if left_len > 2 && !self.is_possible(from_idx + 1, to_idx - 1, left_almost) {
                     continue;
                 }
-                if !self.is_possible (to_idx + 1, to, right_almost) {
+                if to_idx + 1 <= to && !self.is_possible (to_idx + 1, to, right_almost) {
                     continue;
                 }
-                if !self.is_perfect(from_idx + 1, to_idx - 1, left_almost) {
+                if left_len > 2 && !self.is_perfect(from_idx + 1, to_idx - 1, left_almost) {
                     continue;
                 }
-                if !self.is_perfect (to_idx + 1, to, right_almost) {
+                if to_idx + 1 <= to && !self.is_perfect (to_idx + 1, to, right_almost) {
                     continue;
+                }
+                unsafe {
+                    level -=1;
                 }
                 return true;
             }
         }
         if almost {
             from_idx = from + 1;
+            // if self.verbose {
+            //     if cnt == 3 {
+            //         println!("cnt = 3 {} {}", from_idx, to);
+            //     }
+            // }
             for to_idx in (from_idx + 1 .. to + 1).rev() {
                 if self.rna[from_idx] & self.rna[to_idx] == 0 {
                     left_len = to_idx - from_idx + 1;
@@ -100,29 +138,35 @@ impl Solver {
                     if (right_len % 2 !=0) || (left_len % 2 != 0) {
                         continue;
                     }
-                    if !self.is_possible(from_idx + 1, to_idx - 1, false) {
+                    if left_len > 2 && !self.is_possible(from_idx + 1, to_idx - 1, false) {
                         continue;
                     }
-                    if !self.is_possible (to_idx + 1, to, false) {
+                    if to_idx + 1 <= to && !self.is_possible (to_idx + 1, to, false) {
                         continue;
                     }
-                    if !self.is_perfect(from_idx + 1, to_idx - 1, false) {
+                    if left_len > 2 && !self.is_perfect(from_idx + 1, to_idx - 1, false) {
                         continue;
                     }
-                    if !self.is_perfect (to_idx + 1, to, false) {
+                    if to_idx + 1 <= to && !self.is_perfect (to_idx + 1, to, false) {
                         continue;
+                    }
+                    unsafe {
+                        level -=1;
                     }
                     return true;
                 }
             }
         }
+        unsafe {
+            level -=1;
+        }
         return false;
     }
 
     fn is_possible(&self, from: usize, to: usize, almost: bool)->bool {
-        if self.verbose {
-            println!("is_possible from = {:?} to = {:?} almost = {:?}", from, to, almost);
-        }
+        // if self.verbose {
+        //     println!("is_possible from = {:?} to = {:?} almost = {:?}", from, to, almost);
+        // }
         // if to >= self.rna.len() {
         //     return true;
         // }
@@ -206,7 +250,7 @@ fn solve(input: &mut Read, output: &mut Write, verbose: bool) {
 }
 
 fn main() {
-    solve(&mut io::stdin(), &mut io::stdout(), false);
+    solve(&mut io::stdin(), &mut io::stdout(), true);
 }
 
 #[cfg(test)]
@@ -252,6 +296,17 @@ mod tests {
     #[test]
     fn basic_test3() {
         let test = String::from("CAGUU");
+        let testb = test.into_bytes();
+        let mut test_r = testb.as_slice();
+        let mut buf: Vec<u8> = Vec::new();
+        solve(&mut test_r, &mut buf, true);
+
+        let res = String::from_utf8(buf).expect("valid string");
+        assert_eq!(res, "imperfect");
+    }
+    #[test]
+    fn basic_test25() {
+        let test = String::from("UAUUAACUAGCGCGCAUAUAAUUAUGGCCGGCCGCGCACUAUAGUCGACUCUGACGAUCUGACAUGCGUAUCCGGCACGCGGCGUAAGCAUUGCUAGAUCG");
         let testb = test.into_bytes();
         let mut test_r = testb.as_slice();
         let mut buf: Vec<u8> = Vec::new();
