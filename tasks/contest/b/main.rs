@@ -13,10 +13,11 @@ struct Solver {
     u_count: Vec<i32>,
     c_count: Vec<i32>,
     g_count: Vec<i32>,
+    verbose: bool,
 }
 
 impl Solver {
-    fn new(n: usize) -> Solver {
+    fn new(n: usize, v: bool) -> Solver {
         let mut rna: Vec<u8> = Vec::with_capacity(n);
         let mut a_count: Vec<i32> = Vec::with_capacity(n + 1);
         let mut u_count: Vec<i32> = Vec::with_capacity(n + 1);
@@ -33,13 +34,17 @@ impl Solver {
             u_count: u_count,
             c_count: c_count,
             g_count: g_count,
+            verbose: v,
         }
     }
 
     fn is_perfect(&self, from:usize, to: usize, almost: bool) -> bool {
-        if to >= self.rna.len() {
-            return true;
+        if self.verbose {
+            println!("is_perfect from = {:?} to = {:?} almost = {:?}", from, to, almost);
         }
+        // if to >= self.rna.len() {
+        //     return true;
+        // }
         let cnt: i32 = to as i32 - from as i32 + 1;
         if cnt <= 0 {
             return true;
@@ -115,9 +120,12 @@ impl Solver {
     }
 
     fn is_possible(&self, from: usize, to: usize, almost: bool)->bool {
-        if to >= self.rna.len() {
-            return true;
+        if self.verbose {
+            println!("is_possible from = {:?} to = {:?} almost = {:?}", from, to, almost);
         }
+        // if to >= self.rna.len() {
+        //     return true;
+        // }
         let cnt: i32 = to as i32 - from as i32 + 1;
         if cnt <= 0 {
             return true;
@@ -141,14 +149,14 @@ impl Solver {
 }
 
 
-fn solve(input: &mut Read, output: &mut Write) {
+fn solve(input: &mut Read, output: &mut Write, verbose: bool) {
     let mut reader = BufReader::new(input);
     let mut input = String::new();
 
     reader.read_line(&mut input).unwrap();
     let lbytes = input.trim().as_bytes();
     let rna_len = lbytes.len();
-    let mut solver = Solver::new(rna_len);
+    let mut solver = Solver::new(rna_len, verbose);
 
     for i in 0..lbytes.len() {
         solver.a_count[i + 1] = solver.a_count[i];
@@ -178,12 +186,12 @@ fn solve(input: &mut Read, output: &mut Write) {
 
     let almost = rna_len % 2 ==1;
 
-    if !solver.is_possible(0, rna_len, almost) {
+    if !solver.is_possible(0, rna_len -1 , almost) {
         write!(output, "imperfect").expect("correct output");
         return; 
     }
 
-    let is_perfect = solver.is_perfect(0, rna_len, almost);
+    let is_perfect = solver.is_perfect(0, rna_len -1, almost);
 
     if is_perfect {
         if almost {
@@ -198,7 +206,7 @@ fn solve(input: &mut Read, output: &mut Write) {
 }
 
 fn main() {
-    solve(&mut io::stdin(), &mut io::stdout());
+    solve(&mut io::stdin(), &mut io::stdout(), false);
 }
 
 #[cfg(test)]
@@ -225,7 +233,7 @@ mod tests {
         let testb = test.into_bytes();
         let mut test_r = testb.as_slice();
         let mut buf: Vec<u8> = Vec::new();
-        solve(&mut test_r, &mut buf);
+        solve(&mut test_r, &mut buf, false);
 
         let res = String::from_utf8(buf).expect("valid string");
         assert_eq!(res, "perfect");
@@ -236,7 +244,7 @@ mod tests {
         let testb = test.into_bytes();
         let mut test_r = testb.as_slice();
         let mut buf: Vec<u8> = Vec::new();
-        solve(&mut test_r, &mut buf);
+        solve(&mut test_r, &mut buf, false);
 
         let res = String::from_utf8(buf).expect("valid string");
         assert_eq!(res, "almost perfect");
@@ -247,7 +255,7 @@ mod tests {
         let testb = test.into_bytes();
         let mut test_r = testb.as_slice();
         let mut buf: Vec<u8> = Vec::new();
-        solve(&mut test_r, &mut buf);
+        solve(&mut test_r, &mut buf, true);
 
         let res = String::from_utf8(buf).expect("valid string");
         assert_eq!(res, "imperfect");
