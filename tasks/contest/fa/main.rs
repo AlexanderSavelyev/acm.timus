@@ -10,7 +10,7 @@ struct Gene {
     len: u32,
 }
 
-fn intersects(left:u32, right:u32, gene: &Gene) ->bool {
+fn intersects(left: u32, right: u32, gene: &Gene) -> bool {
     if left >= gene.left {
         if left - gene.left <= gene.len {
             return true;
@@ -22,8 +22,26 @@ fn intersects(left:u32, right:u32, gene: &Gene) ->bool {
         if right >= gene.right && left <= gene.left {
             return true;
         }
-    } 
+    }
     return false;
+}
+
+fn find_closest(left_bound: usize, data: &Vec<u32>, search: u32) -> usize {
+    let (_,d2) = data.split_at(left_bound);
+    let res = d2.binary_search(&search);
+
+    match res {
+        Ok(r)=> {
+            let mut lr = r + left_bound;
+            while lr > 0 && data[lr - 1] == search {
+                lr -= 1;
+            }
+            return lr;
+        },
+        Err(r)=> {
+            return r + left_bound;
+        }
+    }
 }
 
 fn solve(input: &mut Read, output: &mut Write) {
@@ -36,8 +54,8 @@ fn solve(input: &mut Read, output: &mut Write) {
 
 
     reader.read_line(&mut input).unwrap();
-    let genes_len:u32;
-    let reads_len:u32;
+    let genes_len: u32;
+    let reads_len: u32;
     {
         let mut s = input.trim().split(' ');
 
@@ -57,7 +75,12 @@ fn solve(input: &mut Read, output: &mut Write) {
             next_gene = s.next();
             let right: u32 = next_gene.unwrap().parse().unwrap();
 
-            genes.push(Gene{idx: i, left: left, right: right, len: (right-left)});
+            genes.push(Gene {
+                idx: i,
+                left: left,
+                right: right,
+                len: (right - left),
+            });
             next_gene = s.next();
         }
     }
@@ -88,15 +111,15 @@ fn solve(input: &mut Read, output: &mut Write) {
             next_read = s.next();
             let right: u32 = next_read.unwrap().parse().unwrap();
 
-            // if max_right[gene_idx] < left {
-            //     gene_idx = find_closest(gene_idx, max_right, left);
-            // }
+            if max_right[gene_idx] < left {
+                gene_idx = find_closest(gene_idx, &max_right, left);
+            }
 
-            //println!("[{}; {}]", left, right);
+            // println!("[{}; {}]", left, right);
             while gene_idx < genes.len() {
                 let next_gene = &genes[gene_idx];
                 if next_gene.left <= right {
-                    //println!("go inside");
+                    // println!("go inside");
                     if intersects(left, right, next_gene) {
                         if cur_gene.is_some() && cur_gene.unwrap() != next_gene.idx {
                             has_only_one = false;
@@ -109,10 +132,10 @@ fn solve(input: &mut Read, output: &mut Write) {
                     break;
                 }
             }
-            if gene_idx >= genes.len() || !has_only_one{
+            if gene_idx >= genes.len() || !has_only_one {
                 break;
             }
-            //println!("{:?}", cur_gene);
+            // println!("{:?}", cur_gene);
             next_read = s.next();
         }
 
@@ -136,8 +159,20 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use std::fs::File;
+    // use std::fs::File;
     use solve;
+    use find_closest;
+
+    #[test]
+    fn closest_test() {
+        let data = vec![3, 4, 5, 5, 7, 9];
+
+
+        assert_eq!(2, find_closest(0, &data, 5));
+        assert_eq!(4, find_closest(0, &data, 6));
+        assert_eq!(6, find_closest(0, &data, 10));
+        assert_eq!(2, find_closest(3, &data, 5));
+    }
 
     #[test]
     fn basic_test1() {
@@ -148,7 +183,7 @@ mod tests {
 1190 1200 2000 2050
 3280 3300 3500 3550
 1500 1560");
-        //let mut f = File::open("../input.txt").expect("correct test");
+        // let mut f = File::open("../input.txt").expect("correct test");
         let testb = test.into_bytes();
         let mut test_r = testb.as_slice();
         let mut buf: Vec<u8> = Vec::new();
@@ -163,7 +198,7 @@ mod tests {
 1000 2000 3000 4000
 1500 3500
 2000 3000");
-        //let mut f = File::open("../input.txt").expect("correct test");
+        // let mut f = File::open("../input.txt").expect("correct test");
         let testb = test.into_bytes();
         let mut test_r = testb.as_slice();
         let mut buf: Vec<u8> = Vec::new();
