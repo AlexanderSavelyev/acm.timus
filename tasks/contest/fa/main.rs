@@ -88,6 +88,10 @@ fn solve(input: &mut Read, output: &mut Write) {
             next_read = s.next();
             let right: u32 = next_read.unwrap().parse().unwrap();
 
+            // if max_right[gene_idx] < left {
+            //     gene_idx = find_closest(gene_idx, max_right, left);
+            // }
+
             //println!("[{}; {}]", left, right);
             while gene_idx < genes.len() {
                 let next_gene = &genes[gene_idx];
@@ -105,7 +109,7 @@ fn solve(input: &mut Read, output: &mut Write) {
                     break;
                 }
             }
-            if gene_idx >= genes.len() && !has_only_one{
+            if gene_idx >= genes.len() || !has_only_one{
                 break;
             }
             //println!("{:?}", cur_gene);
