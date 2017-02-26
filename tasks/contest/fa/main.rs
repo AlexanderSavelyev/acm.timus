@@ -31,6 +31,7 @@ fn solve(input: &mut Read, output: &mut Write) {
     let mut input = String::new();
 
     let mut genes: Vec<Gene> = Vec::new();
+    let mut max_right: Vec<u32> = Vec::new();
     let mut g_count: Vec<u32> = Vec::new();
 
 
@@ -62,6 +63,13 @@ fn solve(input: &mut Read, output: &mut Write) {
     }
 
     genes.sort_by(|a, b| a.left.cmp(&b.left));
+    let mut max_r = 0u32;
+    for g in &genes {
+        if g.right > max_r {
+            max_r = g.right;
+        }
+        max_right.push(max_r);
+    }
     // //println!("{:?}", genes);
 
     let mut gene_idx: usize;
@@ -86,7 +94,7 @@ fn solve(input: &mut Read, output: &mut Write) {
                 if next_gene.left <= right {
                     //println!("go inside");
                     if intersects(left, right, next_gene) {
-                        if cur_gene.is_some() {
+                        if cur_gene.is_some() && cur_gene.unwrap() != next_gene.idx {
                             has_only_one = false;
                             break;
                         }
