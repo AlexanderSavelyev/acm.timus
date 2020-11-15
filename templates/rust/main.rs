@@ -2,7 +2,7 @@ use std::io::{self, BufReader};
 use std::io::prelude::*;
 
 
-fn solve(input: &mut Read, output: &mut Write) {
+fn solve(input: &mut dyn Read, output: &mut dyn Write) {
     let mut reader = BufReader::new(input);
     let mut input = String::new();
 
