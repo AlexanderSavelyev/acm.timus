@@ -35,6 +35,7 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
         }
 
         println!("{:?}", numbers);
+        
     }
 
 }
