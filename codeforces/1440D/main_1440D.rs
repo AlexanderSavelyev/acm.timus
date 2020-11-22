@@ -46,6 +46,12 @@ impl Edge {
 
 #[allow(dead_code)]
 impl Graph {
+    fn new() -> Graph {
+        Graph {
+            vertices_pool: Vec::new(),
+            edges_pool: Vec::new(),
+        }
+    }
     fn add_vertex(&mut self, data: usize) -> usize {
         let res_idx = self.vertices_pool.len();
         self.vertices_pool.push(Vertex::new(data));
@@ -76,14 +82,28 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
         // println!("{:?}", input);
         let mut s = input.trim().split(' ');
 
-        let n_str = s.next().unwrap();
-        let n: usize = n_str.trim().parse().unwrap();
+        let n: usize = s.next().unwrap().trim().parse().unwrap();
+        let m: usize = s.next().unwrap().trim().parse().unwrap();
+        let k: usize = s.next().unwrap().trim().parse().unwrap();
 
-        let k_str = s.next().unwrap();
-        let k: usize = k_str.trim().parse().unwrap();
+        let mut graph: Graph = Graph::new();
 
-        input.clear();
-        reader.read_line(&mut input).unwrap();
+        for i in 0..n {
+            graph.add_vertex(i + 1);
+        }
+
+        for i in 0..m {
+            input.clear();
+            reader.read_line(&mut input).unwrap();
+            let mut v = input.trim().split(' ');
+
+            let v1: usize = v.next().unwrap().trim().parse().unwrap();
+            let v2: usize = v.next().unwrap().trim().parse().unwrap();
+
+            println!("{} {}", v1, v2);
+
+            graph.add_edge(i + 1, v1 - 1, v2 - 2);
+        }
 
         // let elements = input.trim().split(' ');
         // println!("{} {}", n, k);
@@ -145,15 +165,15 @@ mod tests {
         solve(&mut test_r, &mut buf);
 
         let res = String::from_utf8(buf).expect("valid string");
-//         assert_eq!(
-//             res,
-//             "165
-// 108
-// 145
-// 234
-// 11
-// 3
-// "
-        );
+        //         assert_eq!(
+        //             res,
+        //             "165
+        // 108
+        // 145
+        // 234
+        // 11
+        // 3
+        // "
+        // );
     }
 }
