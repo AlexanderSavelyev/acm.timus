@@ -1,5 +1,4 @@
 use std::collections::HashSet;
-use std::collections::BTreeSet;
 use std::io::prelude::*;
 use std::io::{self, BufReader};
 
@@ -93,8 +92,20 @@ impl Graph {
             nei_vec.push(*nei);
         }
         for nei in &nei_vec {
-            self.edges_pool.remove(*nei);
+            self.edges_set.remove(nei);
         }
+    }
+    fn get_components(&self) -> Vec<Vec<usize>> {
+        let mut res: Vec<Vec<usize>> = Vec::new();
+
+        let mut stack: HashSet<usize> = HashSet::new();
+        let mut component: HashSet<usize> = HashSet::new();
+
+        loop {
+            
+        }
+
+        return res;
     }
 }
 
@@ -130,22 +141,23 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
             let v1: usize = v.next().unwrap().trim().parse().unwrap();
             let v2: usize = v.next().unwrap().trim().parse().unwrap();
 
-            println!("{} {}", v1, v2);
+            // println!("{} {}", v1, v2);
 
             graph.add_edge(i + 1, v1 - 1, v2 - 1);
 
         }
 
-        let mut vertices_queue: BTreeSet<usize> = BTreeSet::new();
+        let mut vertices_queue: HashSet<usize> = HashSet::new();
 
         for i in 0 .. n {
             vertices_queue.insert(i);
         }
 
         loop {
-            let next_v = vertices_queue.pop_last();
+            let next_v = vertices_queue.iter().next().cloned();
             match next_v {
                 Some(next_idx) => {
+                    vertices_queue.remove(&next_idx);
                     let next_vertex = graph.get_vertex(next_idx);
                     if next_vertex.get_num_nei() < k - 1 {
                         for nei in &next_vertex.nei_vert {
@@ -153,11 +165,12 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
                         }
                         graph.remove_vertex(next_idx);
                     }
-                    
                 },
                 None => break
             }
         }
+
+        let connected_components = graph.get_components();
 
         // let elements = input.trim().split(' ');
         // println!("{} {}", n, k);
