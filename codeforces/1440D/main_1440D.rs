@@ -1,12 +1,13 @@
 use std::collections::HashSet;
+use std::collections::BTreeSet;
 use std::io::prelude::*;
 use std::io::{self, BufReader};
 
 #[allow(dead_code)]
 struct Vertex {
     data: usize,
-    nei_edge: HashSet<usize>,
     nei_vert: HashSet<usize>,
+    nei_edge: HashSet<usize>,
 }
 
 #[allow(dead_code)]
@@ -20,6 +21,8 @@ struct Edge {
 struct Graph {
     vertices_pool: Vec<Vertex>,
     edges_pool: Vec<Edge>,
+    vertices_set: HashSet<usize>,
+    edges_set: HashSet<usize>,
 }
 
 #[allow(dead_code)]
@@ -27,9 +30,12 @@ impl Vertex {
     fn new(data: usize) -> Vertex {
         Vertex {
             data: data,
-            nei_edge: HashSet::new(),
             nei_vert: HashSet::new(),
+            nei_edge: HashSet::new(),
         }
+    }
+    fn get_num_nei(&self)->usize {
+        return self.nei_vert.len();
     }
 }
 
@@ -50,11 +56,14 @@ impl Graph {
         Graph {
             vertices_pool: Vec::new(),
             edges_pool: Vec::new(),
+            vertices_set: HashSet::new(),
+            edges_set: HashSet::new(),
         }
     }
     fn add_vertex(&mut self, data: usize) -> usize {
         let res_idx = self.vertices_pool.len();
         self.vertices_pool.push(Vertex::new(data));
+        self.vertices_set.insert(res_idx);
         return res_idx;
     }
     fn add_edge(&mut self, data: usize, v1: usize, v2: usize) -> usize {
@@ -62,9 +71,30 @@ impl Graph {
         self.vertices_pool[v2].nei_vert.insert(v1);
         let res_idx = self.edges_pool.len();
         self.edges_pool.push(Edge::new(data, v1, v2));
+        self.edges_set.insert(res_idx);
         self.vertices_pool[v1].nei_edge.insert(res_idx);
         self.vertices_pool[v2].nei_edge.insert(res_idx);
         return res_idx;
+    }
+    fn get_vertex(&self, v_idx: usize) -> &Vertex{
+        return &self.vertices_pool[v_idx];
+    }
+    fn remove_vertex(&mut self, v_idx: usize) {
+        self.vertices_set.remove(&v_idx);
+        let mut nei_vec: Vec<usize> = Vec::new();
+        for nei in &self.vertices_pool[v_idx].nei_vert {
+            nei_vec.push(*nei);
+        }
+        for nei in &nei_vec {
+            self.vertices_pool[*nei].nei_vert.remove(&v_idx);
+        }
+        nei_vec.clear();
+        for nei in &self.vertices_pool[v_idx].nei_edge {
+            nei_vec.push(*nei);
+        }
+        for nei in &nei_vec {
+            self.edges_pool.remove(*nei);
+        }
     }
 }
 
@@ -102,7 +132,31 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
 
             println!("{} {}", v1, v2);
 
-            graph.add_edge(i + 1, v1 - 1, v2 - 2);
+            graph.add_edge(i + 1, v1 - 1, v2 - 1);
+
+        }
+
+        let mut vertices_queue: BTreeSet<usize> = BTreeSet::new();
+
+        for i in 0 .. n {
+            vertices_queue.insert(i);
+        }
+
+        loop {
+            let next_v = vertices_queue.pop_last();
+            match next_v {
+                Some(next_idx) => {
+                    let next_vertex = graph.get_vertex(next_idx);
+                    if next_vertex.get_num_nei() < k - 1 {
+                        for nei in &next_vertex.nei_vert {
+                            vertices_queue.insert(*nei);
+                        }
+                        graph.remove_vertex(next_idx);
+                    }
+                    
+                },
+                None => break
+            }
         }
 
         // let elements = input.trim().split(' ');
