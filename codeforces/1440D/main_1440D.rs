@@ -95,17 +95,98 @@ impl Graph {
             self.edges_set.remove(nei);
         }
     }
-    fn get_components(&self) -> Vec<Vec<usize>> {
-        let mut res: Vec<Vec<usize>> = Vec::new();
 
+    fn get_num_vertices(&self) -> usize {
+        return self.vertices_set.len();
+    }
+
+    fn get_vertices(&self) -> &HashSet<usize> {
+        return &self.vertices_set;
+    }
+
+    fn get_component(&self, start_idx: usize) -> HashSet<usize> {
         let mut stack: HashSet<usize> = HashSet::new();
         let mut component: HashSet<usize> = HashSet::new();
+        stack.insert(start_idx);
 
         loop {
-            
+            let next_v = stack.iter().next().cloned();
+            match next_v {
+                Some(next_idx) => {
+                    stack.remove(&next_idx);
+                    component.insert(next_idx);
+                    for nei in &self.vertices_pool[next_idx].nei_vert {
+                        if !component.contains(nei) {
+                            stack.insert(*nei);
+                        }
+                    }
+                },
+                None => {
+                    break;
+                }
+            }
+        }
+        return component;
+    }
+    fn get_components(&self) -> Vec<HashSet<usize>> {
+        let mut res: Vec<HashSet<usize>> = Vec::new();
+
+        let start_v: Option<usize> = self.vertices_set.iter().next().cloned();
+        match start_v {
+            Some(start_idx) => {
+                let mut full_set: HashSet<usize> = HashSet::new();
+                let mut next_idx = start_idx;
+                loop {
+                    let component: HashSet<usize> = self.get_component(next_idx);
+                    
+                    for p in &component {
+                        full_set.insert(*p);
+                    }
+                    res.push(component);
+                    if full_set.len() < self.vertices_set.len() {
+                        for v in self.vertices_set.difference(&full_set) {
+                            next_idx = *v;
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+            },
+            None => {
+                return res;
+            }
         }
 
+        
+
         return res;
+    }
+}
+
+
+fn remove_vertices_min_nei(graph: &mut Graph, min_nei: usize) {
+    let mut vertices_queue: HashSet<usize> = HashSet::new();
+
+    for i in graph.get_vertices() {
+        vertices_queue.insert(*i);
+    }
+
+    loop {
+        let next_v = vertices_queue.iter().next().cloned();
+        match next_v {
+            Some(next_idx) => {
+                vertices_queue.remove(&next_idx);
+                let next_vertex = graph.get_vertex(next_idx);
+                if next_vertex.get_num_nei() < min_nei {
+                    for nei in &next_vertex.nei_vert {
+                        vertices_queue.insert(*nei);
+                    }
+                    graph.remove_vertex(next_idx);
+                }
+            },
+            None => break
+        }
     }
 }
 
@@ -147,36 +228,46 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
 
         }
 
-        let mut vertices_queue: HashSet<usize> = HashSet::new();
+        remove_vertices_min_nei(&mut graph, k - 1);
+        println!("1 graph.get_num_vertices() {}", graph.get_num_vertices());
 
-        for i in 0 .. n {
-            vertices_queue.insert(i);
-        }
-
-        loop {
-            let next_v = vertices_queue.iter().next().cloned();
-            match next_v {
-                Some(next_idx) => {
-                    vertices_queue.remove(&next_idx);
-                    let next_vertex = graph.get_vertex(next_idx);
-                    if next_vertex.get_num_nei() < k - 1 {
-                        for nei in &next_vertex.nei_vert {
-                            vertices_queue.insert(*nei);
-                        }
-                        graph.remove_vertex(next_idx);
-                    }
-                },
-                None => break
-            }
+        
+        if graph.get_num_vertices() == 0 {
+            writeln!(output, "-1").expect("correct output");
+            return;
         }
 
         let connected_components = graph.get_components();
 
-        // let elements = input.trim().split(' ');
-        // println!("{} {}", n, k);
+        let mut clique: Option<&HashSet<usize>> = None;
 
-        // println!("sum {}", max_sum);
-        // writeln!(output, "{}", max_sum).expect("correct output");
+        for component in &connected_components {
+            println!("component.len() {}", component.len());
+            if component.len() == k {
+                clique = Some(component);
+                break;
+            }
+        }
+
+        remove_vertices_min_nei(&mut graph, k);
+
+        if graph.get_num_vertices() > 0 {
+            writeln!(output, "1 {}", graph.get_num_vertices()).expect("correct output");
+            let collected_vertices: Vec<String> =  graph.get_vertices().iter().map(|&v| graph.get_vertex(v).data.to_string()).collect();
+            writeln!(output, "{}", collected_vertices.join(" ")).expect("correct output");
+        } else {
+            match clique {
+                Some(vertices) => {
+                    writeln!(output, "2").expect("correct output");
+                    let collected_vertices: Vec<String> =  vertices.iter().map(|&v| graph.get_vertex(v).data.to_string()).collect();
+                    writeln!(output, "{}", collected_vertices.join(" ")).expect("correct output");
+                },
+                None => {
+                    writeln!(output, "-1").expect("correct output");
+                }
+            }
+        }
+
     }
 }
 
@@ -232,15 +323,14 @@ mod tests {
         solve(&mut test_r, &mut buf);
 
         let res = String::from_utf8(buf).expect("valid string");
-        //         assert_eq!(
-        //             res,
-        //             "165
-        // 108
-        // 145
-        // 234
-        // 11
-        // 3
-        // "
-        // );
+                assert_eq!(
+                    res,
+                    "2
+4 1 2 3 
+1 10
+1 2 3 4 5 6 7 8 9 10 
+-1
+"
+        );
     }
 }
