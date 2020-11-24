@@ -79,7 +79,11 @@ impl Graph {
         return &self.vertices_pool[v_idx];
     }
     fn remove_vertex(&mut self, v_idx: usize) {
+        println!("remove vertex {}", v_idx);
+        println!("size before {}", self.vertices_set.len());
         self.vertices_set.remove(&v_idx);
+        println!("size before {}", self.vertices_set.len());
+
         let mut nei_vec: Vec<usize> = Vec::new();
         for nei in &self.vertices_pool[v_idx].nei_vert {
             nei_vec.push(*nei);
@@ -102,6 +106,13 @@ impl Graph {
 
     fn get_vertices(&self) -> &HashSet<usize> {
         return &self.vertices_set;
+    }
+    fn get_edges(&self) -> &HashSet<usize> {
+        return &self.edges_set;
+    }
+
+    fn contains_edge(v1: usize, v2: usize) -> bool {
+        if 
     }
 
     fn get_component(&self, start_idx: usize) -> HashSet<usize> {
@@ -190,6 +201,27 @@ fn remove_vertices_min_nei(graph: &mut Graph, min_nei: usize) {
     }
 }
 
+
+fn build_inverted_graph(graph: &Graph) -> Graph{
+    let mut res: Graph = Graph::new();
+    for i in 0 .. graph.vertices_pool.len() {
+        res.add_vertex(i + 1);
+    }
+    for v1 in graph.get_vertices() {
+        for v2 in graph.get_vertices() {
+            if !graph.contains_edge(*v1, *v2) {
+                res.add_edge(0, *v1, *v2);
+            }
+        }
+    }
+    return res;
+}
+
+fn find_clique(connected_components: &Vec<HashSet<usize>>, inverted_graph: &Graph) -> Option<HashSet<usize>> {
+    let mut res: Option<HashSet<usize>> = None;
+    return res;
+}
+
 fn solve(input: &mut dyn Read, output: &mut dyn Write) {
     let mut reader = BufReader::new(input);
     let mut input = String::new();
@@ -227,11 +259,10 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
             graph.add_edge(i + 1, v1 - 1, v2 - 1);
 
         }
+        println!("start remove ");
 
         remove_vertices_min_nei(&mut graph, k - 1);
-        println!("1 graph.get_num_vertices() {}", graph.get_num_vertices());
 
-        
         if graph.get_num_vertices() == 0 {
             writeln!(output, "-1").expect("correct output");
             return;
@@ -249,6 +280,8 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
             }
         }
 
+        let inverted_graph = build_inverted_graph(&graph);
+
         remove_vertices_min_nei(&mut graph, k);
 
         if graph.get_num_vertices() > 0 {
@@ -263,7 +296,20 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
                     writeln!(output, "{}", collected_vertices.join(" ")).expect("correct output");
                 },
                 None => {
-                    writeln!(output, "-1").expect("correct output");
+                    let component_clique = find_clique(&connected_components, &inverted_graph);
+
+                    match component_clique {
+                        Some(vertices) => {
+                            writeln!(output, "2").expect("correct output");
+                            let collected_vertices: Vec<String> =  vertices.iter().map(|&v| graph.get_vertex(v).data.to_string()).collect();
+                            writeln!(output, "{}", collected_vertices.join(" ")).expect("correct output");
+                        },
+                        None => {
+                            writeln!(output, "-1").expect("correct output");
+                        }
+                    }
+
+                    
                 }
             }
         }
