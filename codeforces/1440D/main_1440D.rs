@@ -217,10 +217,6 @@ fn remove_vertices_min_nei(graph: &mut Graph, min_nei: usize) {
 // }
 
 
-fn check_clique(graph: &Graph, vert: usize, clique: &HashSet<usize>) -> bool {
-    return clique.is_subset(&graph.get_vertex(vert).nei_vert);
-}
-
 fn traverse_search(graph: &Graph, clique: &mut HashSet<usize>, vert: usize, k: usize, visited: &HashSet<usize>) {
     for nei in &graph.get_vertex(vert).nei_vert {
         if visited.contains(&nei) {
@@ -229,7 +225,7 @@ fn traverse_search(graph: &Graph, clique: &mut HashSet<usize>, vert: usize, k: u
         if clique.contains(&nei) {
             continue;
         }
-        if check_clique(graph, *nei, clique) {
+        if clique.is_subset(&graph.get_vertex(*nei).nei_vert) {
             clique.insert(*nei);
             if clique.len() == k {
                 return;
