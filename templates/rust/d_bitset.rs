@@ -45,6 +45,18 @@ impl DBitset {
         return w != self.words[wordindex];
     }
 
+    fn reset(&mut self, bit_idx: usize) {
+        let wordindex = DBitset::word_index(bit_idx);
+        if wordindex >= self.words_in_use {
+            return;
+        }
+        let mut bit = bit_idx;
+        bit -= (wordindex << ADDRESS_BITS_PER_WORD);
+
+        self.words[wordindex] &= ~(1u64 << bit);
+        self.recalculate_words_in_use();
+    }
+
     fn get(&self, bit_idx: usize) -> bool {
         let word_index = DBitset::word_index(bit_idx);
         let mut bit = bit_idx;
@@ -184,4 +196,10 @@ impl DBitset {
 
         return Some(bit + lbit.unwrap());
     }
+
+    // let mut bit = cell.next_set_bit(0);
+    // while bit.is_some() {
+    //     let b = bit.unwrap();
+    //     bit = cell.next_set_bit(b + 1);
+    // }
 }
