@@ -332,13 +332,15 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
 
         if graph.get_num_vertices() > 0 {
             writeln!(output, "1 {}", graph.get_num_vertices()).expect("correct output");
-            let collected_vertices: Vec<String> =  graph.get_vertices().iter().map(|&v| graph.get_vertex(v).data.to_string()).collect();
+            let mut collected_vertices: Vec<String> =  graph.get_vertices().iter().map(|&v| graph.get_vertex(v).data.to_string()).collect();
+            collected_vertices.sort();
             writeln!(output, "{}", collected_vertices.join(" ")).expect("correct output");
         } else {
             match clique {
                 Some(vertices) => {
                     writeln!(output, "2").expect("correct output");
-                    let collected_vertices: Vec<String> =  vertices.iter().map(|&v| graph.get_vertex(v).data.to_string()).collect();
+                    let mut collected_vertices: Vec<String> =  vertices.iter().map(|&v| graph.get_vertex(v).data.to_string()).collect();
+                    collected_vertices.sort();
                     writeln!(output, "{}", collected_vertices.join(" ")).expect("correct output");
                 },
                 None => {
@@ -347,7 +349,8 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
                     match component_clique {
                         Some(vertices) => {
                             writeln!(output, "2").expect("correct output");
-                            let collected_vertices: Vec<String> =  vertices.iter().map(|&v| graph.get_vertex(v).data.to_string()).collect();
+                            let mut collected_vertices: Vec<String> =  vertices.iter().map(|&v| graph.get_vertex(v).data.to_string()).collect();
+                            collected_vertices.sort();
                             writeln!(output, "{}", collected_vertices.join(" ")).expect("correct output");
                         },
                         None => {
@@ -418,9 +421,9 @@ mod tests {
                 assert_eq!(
                     res,
                     "2
-4 1 2 3 
+1 2 3 5
 1 10
-1 2 3 4 5 6 7 8 9 10 
+1 10 2 3 4 5 6 7 8 9
 -1
 "
         );
