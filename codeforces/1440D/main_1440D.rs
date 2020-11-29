@@ -216,8 +216,7 @@ fn remove_vertices_min_nei(graph: &mut Graph, min_nei: usize) {
 //     }
 //     return res;
 // }
-
-
+#[allow(dead_code)]
 fn traverse_search(graph: &Graph, clique: &mut HashSet<usize>, vert: usize, k: usize, visited: &HashSet<usize>) {
     for nei in &graph.get_vertex(vert).nei_vert {
         if visited.contains(&nei) {
@@ -346,7 +345,7 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
 
         if graph.get_num_vertices() == 0 {
             writeln!(output, "-1").expect("correct output");
-            return;
+            continue;
         }
 
         let connected_components = graph.get_components();
@@ -393,12 +392,9 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
                             writeln!(output, "-1").expect("correct output");
                         }
                     }
-
-                    
                 }
             }
         }
-
     }
 }
 
