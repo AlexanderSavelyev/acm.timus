@@ -3,6 +3,7 @@ use std::io::prelude::*;
 use std::io::{self, BufReader};
 
 #[allow(dead_code)]
+#[derive(Clone)]
 struct Vertex {
     data: usize,
     nei_vert: HashSet<usize>,
@@ -10,6 +11,7 @@ struct Vertex {
 }
 
 #[allow(dead_code)]
+#[derive(Clone)]
 struct Edge {
     data: usize,
     v1: usize,
@@ -17,6 +19,7 @@ struct Edge {
 }
 
 #[allow(dead_code)]
+#[derive(Clone)]
 struct Graph {
     vertices_pool: Vec<Vertex>,
     edges_pool: Vec<Edge>,
@@ -79,10 +82,10 @@ impl Graph {
         return &self.vertices_pool[v_idx];
     }
     fn remove_vertex(&mut self, v_idx: usize) {
-        println!("remove vertex {}", v_idx);
-        println!("size before {}", self.vertices_set.len());
+        // println!("remove vertex {}", v_idx);
+        // println!("size before {}", self.vertices_set.len());
         self.vertices_set.remove(&v_idx);
-        println!("size before {}", self.vertices_set.len());
+        // println!("size before {}", self.vertices_set.len());
 
         let mut nei_vec: Vec<usize> = Vec::new();
         for nei in &self.vertices_pool[v_idx].nei_vert {
@@ -109,10 +112,6 @@ impl Graph {
     }
     fn get_edges(&self) -> &HashSet<usize> {
         return &self.edges_set;
-    }
-
-    fn contains_edge(v1: usize, v2: usize) -> bool {
-        if 
     }
 
     fn get_component(&self, start_idx: usize) -> HashSet<usize> {
@@ -202,23 +201,69 @@ fn remove_vertices_min_nei(graph: &mut Graph, min_nei: usize) {
 }
 
 
-fn build_inverted_graph(graph: &Graph) -> Graph{
-    let mut res: Graph = Graph::new();
-    for i in 0 .. graph.vertices_pool.len() {
-        res.add_vertex(i + 1);
-    }
-    for v1 in graph.get_vertices() {
-        for v2 in graph.get_vertices() {
-            if !graph.contains_edge(*v1, *v2) {
-                res.add_edge(0, *v1, *v2);
+// fn build_inverted_graph(graph: &Graph) -> Graph{
+//     let mut res: Graph = Graph::new();
+//     for i in 0 .. graph.vertices_pool.len() {
+//         res.add_vertex(i + 1);
+//     }
+//     for v1 in graph.get_vertices() {
+//         for v2 in graph.get_vertices() {
+//             if !graph.contains_edge(*v1, *v2) {
+//                 res.add_edge(0, *v1, *v2);
+//             }
+//         }
+//     }
+//     return res;
+// }
+
+
+fn check_clique(graph: &Graph, vert: usize, clique: &HashSet<usize>) -> bool {
+    return clique.is_subset(&graph.get_vertex(vert).nei_vert);
+}
+
+fn traverse_search(graph: &Graph, clique: &mut HashSet<usize>, vert: usize, k: usize, visited: &HashSet<usize>) {
+    for nei in &graph.get_vertex(vert).nei_vert {
+        if visited.contains(&nei) {
+            continue;
+        }
+        if clique.contains(&nei) {
+            continue;
+        }
+        if check_clique(graph, *nei, clique) {
+            clique.insert(*nei);
+            if clique.len() == k {
+                return;
+            }
+            traverse_search(graph, clique, *nei, k, visited);
+            if clique.len() == k {
+                return;
+            } else {
+                clique.remove(&nei);
             }
         }
     }
-    return res;
 }
-
-fn find_clique(connected_components: &Vec<HashSet<usize>>, inverted_graph: &Graph) -> Option<HashSet<usize>> {
+fn find_clique(connected_components: &Vec<HashSet<usize>>, graph: &Graph, k: usize) -> Option<HashSet<usize>> {
     let mut res: Option<HashSet<usize>> = None;
+    let mut clique: HashSet<usize> = HashSet::new();
+    for component in connected_components {
+        let mut visited_vert: HashSet<usize> = HashSet::new();
+        for v1 in component {
+            if component.len() - visited_vert.len() < k {
+                continue;
+            }
+            clique.insert(*v1);
+            traverse_search(graph, &mut clique, *v1, k, &visited_vert);
+            if clique.len() == k {
+                res = Some(clique);
+                return res;
+            }
+            clique.remove(v1);
+            visited_vert.insert(*v1);
+            
+        }
+    }
+
     return res;
 }
 
@@ -259,7 +304,7 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
             graph.add_edge(i + 1, v1 - 1, v2 - 1);
 
         }
-        println!("start remove ");
+        // println!("start remove ");
 
         remove_vertices_min_nei(&mut graph, k - 1);
 
@@ -273,14 +318,15 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
         let mut clique: Option<&HashSet<usize>> = None;
 
         for component in &connected_components {
-            println!("component.len() {}", component.len());
+            // println!("component.len() {}", component.len());
             if component.len() == k {
                 clique = Some(component);
                 break;
             }
         }
+        let clique_graph = graph.clone();
 
-        let inverted_graph = build_inverted_graph(&graph);
+        // let inverted_graph = build_inverted_graph(&graph);
 
         remove_vertices_min_nei(&mut graph, k);
 
@@ -296,7 +342,7 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
                     writeln!(output, "{}", collected_vertices.join(" ")).expect("correct output");
                 },
                 None => {
-                    let component_clique = find_clique(&connected_components, &inverted_graph);
+                    let component_clique = find_clique(&connected_components, &clique_graph, k);
 
                     match component_clique {
                         Some(vertices) => {
