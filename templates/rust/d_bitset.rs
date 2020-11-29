@@ -1,3 +1,5 @@
+use std::cmp;
+
 #[allow(dead_code)]
 const ADDRESS_BITS_PER_WORD: u16 = 6;
 #[allow(dead_code)]
