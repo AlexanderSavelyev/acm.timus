@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use std::io::prelude::*;
 use std::io::{self, BufReader};
+use std::collections::hash_set::Iter;
 
 #[allow(dead_code)]
 #[derive(Clone)]
@@ -249,10 +250,49 @@ fn find_clique(connected_components: &Vec<HashSet<usize>>, graph: &Graph, k: usi
                 continue;
             }
             clique.insert(*v1);
-            traverse_search(graph, &mut clique, *v1, k, &visited_vert);
-            if clique.len() == k {
-                res = Some(clique);
-                return res;
+            // traverse_search(graph, &mut clique, *v1, k, &visited_vert);
+
+            let mut current_level: usize = 0;
+            let mut iter_stack: Vec<Iter<usize>> = Vec::new();
+            let mut clique_stack: Vec<usize> = Vec::new();
+
+            iter_stack.push(graph.get_vertex(*v1).nei_vert.iter());
+            loop {
+                let current_idx = iter_stack[current_level].next();
+                match current_idx {
+                    Some(nei) => {
+                        if clique.contains(nei) {
+                            continue;
+                        }
+                        if visited_vert.contains(nei) {
+                            continue;
+                        }
+                        if clique.is_subset(&graph.get_vertex(*nei).nei_vert) {
+                            clique.insert(*nei);
+                            clique_stack.push(*nei);
+                            if clique.len() == k {
+                                res = Some(clique);
+                                return res;
+                            } else {
+                                current_level += 1;
+                                iter_stack.push(graph.get_vertex(*nei).nei_vert.iter())
+                            }
+                        }
+                    },
+                    None => {
+                        iter_stack.pop();
+                        current_level -= 1;
+                        let last_item = clique_stack.pop();
+                        match last_item {
+                            Some(v) => {
+                                clique.remove(&v);
+                            },
+                            None => {
+                                break;
+                            }
+                        }
+                    }
+                }
             }
             clique.remove(v1);
             visited_vert.insert(*v1);
