@@ -8,7 +8,6 @@ use std::cmp;
 #[derive(Clone)]
 struct Vertex {
     nei_vert: HashSet<usize>,
-    nei_edge: HashSet<usize>,
 }
 
 #[allow(dead_code)]
@@ -22,21 +21,20 @@ struct Edge {
 #[derive(Clone)]
 struct Graph {
     vertices_pool: Vec<Vertex>,
-    edges_pool: Vec<Edge>,
     vertices_set: HashSet<usize>,
-    edges_set: HashSet<usize>,
 }
 
 #[allow(dead_code)]
 impl Vertex {
-    fn new() -> Vertex {
+    fn new(self_id: usize) -> Vertex {
+        let mut nei: HashSet<usize> =  HashSet::new();
+        nei.insert(self_id);
         Vertex {
-            nei_vert: HashSet::new(),
-            nei_edge: HashSet::new(),
+            nei_vert: nei,
         }
     }
     fn get_num_nei(&self)->usize {
-        return self.nei_vert.len();
+        return self.nei_vert.len() - 1;
     }
 }
 
@@ -55,26 +53,18 @@ impl Graph {
     fn new() -> Graph {
         Graph {
             vertices_pool: Vec::new(),
-            edges_pool: Vec::new(),
             vertices_set: HashSet::new(),
-            edges_set: HashSet::new(),
         }
     }
     fn add_vertex(&mut self) -> usize {
         let res_idx = self.vertices_pool.len();
-        self.vertices_pool.push(Vertex::new());
+        self.vertices_pool.push(Vertex::new(res_idx));
         self.vertices_set.insert(res_idx);
         return res_idx;
     }
-    fn add_edge(&mut self, v1: usize, v2: usize) -> usize {
+    fn add_edge(&mut self, v1: usize, v2: usize) {
         self.vertices_pool[v1].nei_vert.insert(v2);
         self.vertices_pool[v2].nei_vert.insert(v1);
-        let res_idx = self.edges_pool.len();
-        self.edges_pool.push(Edge::new(v1, v2));
-        self.edges_set.insert(res_idx);
-        self.vertices_pool[v1].nei_edge.insert(res_idx);
-        self.vertices_pool[v2].nei_edge.insert(res_idx);
-        return res_idx;
     }
     fn get_vertex(&self, v_idx: usize) -> &Vertex{
         return &self.vertices_pool[v_idx];
@@ -92,13 +82,6 @@ impl Graph {
         for nei in &nei_vec {
             self.vertices_pool[*nei].nei_vert.remove(&v_idx);
         }
-        nei_vec.clear();
-        for nei in &self.vertices_pool[v_idx].nei_edge {
-            nei_vec.push(*nei);
-        }
-        for nei in &nei_vec {
-            self.edges_set.remove(nei);
-        }
     }
 
     fn get_num_vertices(&self) -> usize {
@@ -108,10 +91,6 @@ impl Graph {
     fn get_vertices(&self) -> &HashSet<usize> {
         return &self.vertices_set;
     }
-    fn get_edges(&self) -> &HashSet<usize> {
-        return &self.edges_set;
-    }
-
     fn get_component(&self, start_idx: usize) -> HashSet<usize> {
         let mut stack: HashSet<usize> = HashSet::new();
         let mut component: HashSet<usize> = HashSet::new();
@@ -188,6 +167,9 @@ fn remove_vertices_min_nei(graph: &mut Graph, min_nei: usize) {
                 let next_vertex = graph.get_vertex(next_idx);
                 if next_vertex.get_num_nei() < min_nei {
                     for nei in &next_vertex.nei_vert {
+                        if *nei == next_idx {
+                            continue;
+                        }
                         vertices_queue.insert(*nei);
                     }
                     graph.remove_vertex(next_idx);
@@ -305,33 +287,28 @@ fn find_clique_max(graph: &Graph, k: usize) -> Option<HashSet<usize>> {
     return res;
 }
 
-#[allow(dead_code)]
 fn find_clique(graph: &mut Graph, k: usize) -> Option<HashSet<usize>> {
+    let mut vertices_to_remove: Vec<usize> = Vec::new();
     loop {
-        let mut vertices_to_remove: Vec<usize> = Vec::new();
+        vertices_to_remove.clear();
         for v1 in graph.get_vertices() {
-            if graph.get_vertex(*v1).nei_vert.len() != k - 1 {
+            if graph.get_vertex(*v1).get_num_nei() != k - 1 {
                 continue;
             }
             // if component.len() - visited_vert.len() < k {
             //     continue;
             // }
-            let mut clique_candidates: HashSet<usize> = HashSet::with_capacity(k);
-            clique_candidates.insert(*v1);
-            for nei in &graph.get_vertex(*v1).nei_vert {
-                clique_candidates.insert(*nei);
-            }
+            let clique_candidates = &graph.get_vertex(*v1).nei_vert;
+
             let mut is_clique = true;
             for nei in &graph.get_vertex(*v1).nei_vert {
-                clique_candidates.remove(&nei);
                 if !clique_candidates.is_subset(&graph.get_vertex(*nei).nei_vert) {
                     is_clique = false;
                     break;
                 }
-                clique_candidates.insert(*nei);
             }
             if is_clique {
-                return Some(clique_candidates);
+                return Some(clique_candidates.clone());
             } else {
                 vertices_to_remove.push(*v1);
             }
@@ -339,8 +316,8 @@ fn find_clique(graph: &mut Graph, k: usize) -> Option<HashSet<usize>> {
         if vertices_to_remove.len() == 0 {
             break;
         }
-        for v in vertices_to_remove {
-            graph.remove_vertex(v);
+        for v in &vertices_to_remove {
+            graph.remove_vertex(*v);
         }
         if graph.get_vertices().len() < k {
             break;
@@ -707,14 +684,12 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
         //         break;
         //     }
         // }
-        // let mut clique_graph = graph.clone();
-        let mut clique_graph = make_dbitset_from(&graph);
-        let mut vert_map: HashMap<usize, usize> = HashMap::with_capacity(graph.vertices_pool.len());
-        for v in graph.get_vertices() {
-            vert_map.insert(*v, graph.get_vertex(*v).nei_vert.len());
-        }
-
-        // let inverted_graph = build_inverted_graph(&graph);
+        let mut clique_graph = graph.clone();
+        // let mut clique_graph = make_dbitset_from(&graph);
+        // let mut vert_map: HashMap<usize, usize> = HashMap::with_capacity(graph.vertices_pool.len());
+        // for v in graph.get_vertices() {
+        //     vert_map.insert(*v, graph.get_vertex(*v).nei_vert.len());
+        // }
 
         remove_vertices_min_nei(&mut graph, k);
 
@@ -724,7 +699,8 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
             // collected_vertices.sort();
             writeln!(output, "{}", collected_vertices.join(" ")).expect("correct output");
         } else {
-            let component_clique = find_clique_bitset(&mut clique_graph, &mut vert_map, k);
+            // let component_clique = find_clique_bitset(&mut clique_graph, &mut vert_map, k);
+            let component_clique = find_clique(&mut clique_graph, k);
 
             match component_clique {
                 Some(vertices) => {
