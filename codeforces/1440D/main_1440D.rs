@@ -7,7 +7,6 @@ use std::cmp;
 #[allow(dead_code)]
 #[derive(Clone)]
 struct Vertex {
-    data: usize,
     nei_vert: HashSet<usize>,
     nei_edge: HashSet<usize>,
 }
@@ -15,7 +14,6 @@ struct Vertex {
 #[allow(dead_code)]
 #[derive(Clone)]
 struct Edge {
-    data: usize,
     v1: usize,
     v2: usize,
 }
@@ -31,9 +29,8 @@ struct Graph {
 
 #[allow(dead_code)]
 impl Vertex {
-    fn new(data: usize) -> Vertex {
+    fn new() -> Vertex {
         Vertex {
-            data: data,
             nei_vert: HashSet::new(),
             nei_edge: HashSet::new(),
         }
@@ -45,9 +42,8 @@ impl Vertex {
 
 #[allow(dead_code)]
 impl Edge {
-    fn new(data: usize, v1: usize, v2: usize) -> Edge {
+    fn new(v1: usize, v2: usize) -> Edge {
         Edge {
-            data: data,
             v1: v1,
             v2: v2,
         }
@@ -64,17 +60,17 @@ impl Graph {
             edges_set: HashSet::new(),
         }
     }
-    fn add_vertex(&mut self, data: usize) -> usize {
+    fn add_vertex(&mut self) -> usize {
         let res_idx = self.vertices_pool.len();
-        self.vertices_pool.push(Vertex::new(data));
+        self.vertices_pool.push(Vertex::new());
         self.vertices_set.insert(res_idx);
         return res_idx;
     }
-    fn add_edge(&mut self, data: usize, v1: usize, v2: usize) -> usize {
+    fn add_edge(&mut self, v1: usize, v2: usize) -> usize {
         self.vertices_pool[v1].nei_vert.insert(v2);
         self.vertices_pool[v2].nei_vert.insert(v1);
         let res_idx = self.edges_pool.len();
-        self.edges_pool.push(Edge::new(data, v1, v2));
+        self.edges_pool.push(Edge::new(v1, v2));
         self.edges_set.insert(res_idx);
         self.vertices_pool[v1].nei_edge.insert(res_idx);
         self.vertices_pool[v2].nei_edge.insert(res_idx);
@@ -574,8 +570,10 @@ fn make_dbitset_from(graph: &Graph) -> Vec<DBitset> {
 
 
 fn find_clique_bitset(graph: &mut Vec<DBitset>, vert_map: &mut HashMap<usize, usize>, k: usize) -> Option<HashSet<usize>> {
+    let mut vertex_to_remove: Vec<usize> = Vec::with_capacity(graph.len());
+    let mut vertices_to_update: Vec<usize> = Vec::with_capacity(graph.len());
     loop {
-        let mut vertex_to_remove: Option<usize> = None;
+        vertex_to_remove.clear();
         for (v1, v1_len) in vert_map.iter() {
             if *v1_len != k - 1 {
                 continue;
@@ -610,37 +608,34 @@ fn find_clique_bitset(graph: &mut Vec<DBitset>, vert_map: &mut HashMap<usize, us
                 return Some(clique);
             } 
             
-            vertex_to_remove=Some(*v1);
+            vertex_to_remove.push(*v1);
+        }
+        if vertex_to_remove.len() == 0 {
             break;
         }
-        match vertex_to_remove {
-            Some(v) => {
-                let mut vertices_to_update: Vec<usize> = Vec::with_capacity(graph.len());
-                let clique_candidates = &graph[v];
-                let mut bit = clique_candidates.next_set_bit(0);
-                while bit.is_some() {
-                    let nei = bit.unwrap();
-                    vertices_to_update.push(nei);
-                    
-                    let vert_to_update = vert_map.get_mut(&nei);
-                    match vert_to_update {
-                        Some(vert) => {
-                            *vert -= 1;
-                        }, 
-                        None => {
-                        }
+        for v in &vertex_to_remove {
+            vertices_to_update.clear();
+            let clique_candidates = &graph[*v];
+            let mut bit = clique_candidates.next_set_bit(0);
+            while bit.is_some() {
+                let nei = bit.unwrap();
+                vertices_to_update.push(nei);
+                
+                let vert_to_update = vert_map.get_mut(&nei);
+                match vert_to_update {
+                    Some(vert) => {
+                        *vert -= 1;
+                    }, 
+                    None => {
                     }
-
-                    bit = clique_candidates.next_set_bit(nei + 1);
                 }
-                vert_map.remove(&v);
 
-                for nei in &vertices_to_update {
-                    graph[*nei].reset(v);
-                }
-            },
-            None => {
-                break;
+                bit = clique_candidates.next_set_bit(nei + 1);
+            }
+            vert_map.remove(&v);
+
+            for nei in &vertices_to_update {
+                graph[*nei].reset(*v);
             }
         }
         // println!("before {:?}", vert_map);
@@ -675,11 +670,11 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
 
         let mut graph: Graph = Graph::new();
 
-        for i in 0..n {
-            graph.add_vertex(i + 1);
+        for _ in 0..n {
+            graph.add_vertex();
         }
 
-        for i in 0..m {
+        for _ in 0..m {
             input.clear();
             reader.read_line(&mut input).unwrap();
             let mut v = input.trim().split(' ');
@@ -689,7 +684,7 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
 
             // println!("{} {}", v1, v2);
 
-            graph.add_edge(i + 1, v1 - 1, v2 - 1);
+            graph.add_edge(v1 - 1, v2 - 1);
 
         }
         // println!("start remove ");
@@ -725,7 +720,7 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
 
         if graph.get_num_vertices() > 0 {
             writeln!(output, "1 {}", graph.get_num_vertices()).expect("correct output");
-            let collected_vertices: Vec<String> =  graph.get_vertices().iter().map(|&v| graph.get_vertex(v).data.to_string()).collect();
+            let collected_vertices: Vec<String> =  graph.get_vertices().iter().map(|&v| (v + 1).to_string()).collect();
             // collected_vertices.sort();
             writeln!(output, "{}", collected_vertices.join(" ")).expect("correct output");
         } else {
@@ -734,7 +729,7 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
             match component_clique {
                 Some(vertices) => {
                     writeln!(output, "2").expect("correct output");
-                    let collected_vertices: Vec<String> =  vertices.iter().map(|&v| graph.get_vertex(v).data.to_string()).collect();
+                    let collected_vertices: Vec<String> =  vertices.iter().map(|&v| (v + 1).to_string()).collect();
                     // collected_vertices.sort();
                     writeln!(output, "{}", collected_vertices.join(" ")).expect("correct output");
                 },
