@@ -622,7 +622,7 @@ fn find_clique_bitset(graph: &mut Vec<DBitset>, vert_map: &mut HashMap<usize, us
                     let nei = bit.unwrap();
                     vertices_to_update.push(nei);
                     
-                    let vert_to_update = vert_map.get_mut(&v);
+                    let vert_to_update = vert_map.get_mut(&nei);
                     match vert_to_update {
                         Some(vert) => {
                             *vert -= 1;
