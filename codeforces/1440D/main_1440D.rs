@@ -12,13 +12,6 @@ struct Vertex {
 
 #[allow(dead_code)]
 #[derive(Clone)]
-struct Edge {
-    v1: usize,
-    v2: usize,
-}
-
-#[allow(dead_code)]
-#[derive(Clone)]
 struct Graph {
     vertices_pool: Vec<Vertex>,
     vertices_set: HashSet<usize>,
@@ -35,16 +28,6 @@ impl Vertex {
     }
     fn get_num_nei(&self)->usize {
         return self.nei_vert.len() - 1;
-    }
-}
-
-#[allow(dead_code)]
-impl Edge {
-    fn new(v1: usize, v2: usize) -> Edge {
-        Edge {
-            v1: v1,
-            v2: v2,
-        }
     }
 }
 
@@ -144,9 +127,6 @@ impl Graph {
                 return res;
             }
         }
-
-        
-
         return res;
     }
 }
@@ -525,6 +505,7 @@ impl DBitset {
     }
 }
 
+#[allow(dead_code)]
 fn make_dbitset_from(graph: &Graph) -> Vec<DBitset> {
     let vert_len = graph.vertices_pool.len();
     let mut res: Vec<DBitset> = Vec::with_capacity(vert_len);
@@ -545,7 +526,7 @@ fn make_dbitset_from(graph: &Graph) -> Vec<DBitset> {
     return res;
 }
 
-
+#[allow(dead_code)]
 fn find_clique_bitset(graph: &mut Vec<DBitset>, vert_map: &mut HashMap<usize, usize>, k: usize) -> Option<HashSet<usize>> {
     let mut vertex_to_remove: Vec<usize> = Vec::with_capacity(graph.len());
     let mut vertices_to_update: Vec<usize> = Vec::with_capacity(graph.len());
