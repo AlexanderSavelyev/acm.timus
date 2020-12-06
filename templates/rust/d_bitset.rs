@@ -53,7 +53,7 @@ impl DBitset {
         let mut bit = bit_idx;
         bit -= (wordindex << ADDRESS_BITS_PER_WORD);
 
-        self.words[wordindex] &= ~(1u64 << bit);
+        self.words[wordindex] &= !(1u64 << bit);
         self.recalculate_words_in_use();
     }
 
@@ -202,4 +202,172 @@ impl DBitset {
     //     let b = bit.unwrap();
     //     bit = cell.next_set_bit(b + 1);
     // }
+    //
+}
+
+
+impl<'a> IntoIterator for &'a DBitset {
+    type Item = usize;
+    type IntoIter = BitsetIterator<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        BitsetIterator {
+            bitset: self,
+            index: None,
+        }
+    }
+}
+
+struct BitsetIterator<'a> {
+    bitset: &'a DBitset,
+    index: Option<usize>,
+}
+
+impl<'a> Iterator for BitsetIterator<'a> {
+    type Item = usize;
+    fn next(&mut self) -> Option<usize> {
+        let start_idx = match self.index {
+            Some(idx) => {
+                idx + 1
+            }, 
+            None => {
+                0
+            }
+        };
+        match self.bitset.next_set_bit(start_idx) {
+            Some(bit) => {
+                self.index.replace(bit);
+                return Some(bit);
+            },
+            None => {
+                return None;
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // rustc --test d_bitset.rs; ./d_bitset --nocapture
+    use DBitset;
+
+    #[test]
+    fn test_bitset1() {
+        let mut b = DBitset::new(1000);
+        assert_eq!(false, b.get(65));
+        b.set(65);
+        assert_eq!(true, b.get(65));
+    }
+
+    #[test]
+    fn test_bitset2() {
+        let mut b = DBitset::new(1000);
+        b.set(1025);
+        assert_eq!(true, b.get(1025));
+    }
+    #[test]
+    fn test_bitset3() {
+        let mut b1 = DBitset::new(1000);
+        let mut b2 = DBitset::new(1000);
+        b1.set(1);
+        b1.set(5);
+        b1.set(6);
+        b1.set(200);
+        b2.set(1);
+        b2.set(5);
+        b2.set(6);
+        b2.set(200);
+        b2.set(260);
+        b2.set(10);
+        assert_eq!(true, b1.is_subset_of(&b2));
+        b1.set(7);
+        assert_eq!(false, b1.is_subset_of(&b2));
+    }
+
+    #[test]
+    fn test_bitset4() {
+        let mut b = DBitset::new(1000);
+        b.set(0);
+        b.set(1);
+        b.set(5);
+        b.set(6);
+        b.set(200);
+        let mut bit = b.next_set_bit(0);
+        assert_eq!(Some(0), bit);
+        bit = b.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(1), bit);
+        bit = b.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(5), bit);
+        bit = b.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(6), bit);
+        bit = b.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(200), bit);
+        bit = b.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(None, bit);
+
+        // println!("{:?}", b.next_set_bit(0));
+    }
+    #[test]
+    fn test_bitset5() {
+        let mut b = DBitset::new(1024);
+        b.set(0);
+        b.set(1);
+        b.set(5);
+        b.set(6);
+        b.set(200);
+        b.set(10000);
+        b.set(50000);
+        let mut bit = b.next_set_bit(0);
+        assert_eq!(Some(0), bit);
+        bit = b.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(1), bit);
+        bit = b.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(5), bit);
+        bit = b.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(6), bit);
+        bit = b.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(200), bit);
+        bit = b.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(10000), bit);
+        bit = b.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(50000), bit);
+        bit = b.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(None, bit);
+        let mut b2 = DBitset::new(1024);
+        b2.or_with(&b);
+
+        bit = b2.next_set_bit(0);
+        assert_eq!(Some(0), bit);
+        bit = b2.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(1), bit);
+        bit = b2.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(5), bit);
+        bit = b2.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(6), bit);
+        bit = b2.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(200), bit);
+        bit = b2.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(10000), bit);
+        bit = b2.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(Some(50000), bit);
+        bit = b2.next_set_bit(bit.unwrap() + 1);
+        assert_eq!(None, bit);
+        // println!("{:?}", b.next_set_bit(0));
+    }
+
+    #[test]
+    fn test_bitset6() {
+        let mut b = DBitset::new(1000);
+        b.set(0);
+        b.set(1);
+        b.set(5);
+        b.set(6);
+        b.set(200);
+
+        let mut res: Vec<String> = Vec::new();
+        for bit in &b {
+            res.push(bit.to_string());
+        }
+        assert_eq!("0 1 5 6 200", res.join(" "));
+    }
 }
