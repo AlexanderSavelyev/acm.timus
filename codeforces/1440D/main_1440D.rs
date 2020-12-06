@@ -502,6 +502,46 @@ impl DBitset {
     }
 }
 
+impl<'a> IntoIterator for &'a DBitset {
+    type Item = usize;
+    type IntoIter = BitsetIterator<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        BitsetIterator {
+            bitset: self,
+            index: None,
+        }
+    }
+}
+
+struct BitsetIterator<'a> {
+    bitset: &'a DBitset,
+    index: Option<usize>,
+}
+
+impl<'a> Iterator for BitsetIterator<'a> {
+    type Item = usize;
+    fn next(&mut self) -> Option<usize> {
+        let start_idx = match self.index {
+            Some(idx) => {
+                idx + 1
+            }, 
+            None => {
+                0
+            }
+        };
+        match self.bitset.next_set_bit(start_idx) {
+            Some(bit) => {
+                self.index.replace(bit);
+                return Some(bit);
+            },
+            None => {
+                return None;
+            }
+        }
+    }
+}
+
 #[allow(dead_code)]
 fn make_dbitset_from(graph: &Graph) -> Vec<DBitset> {
     let vert_len = graph.vertices_pool.len();
@@ -682,11 +722,8 @@ fn find_result(graph: &mut Graph,
 
                     let clique_candidates = &b_graph.bitset_vec[bv];
                     let mut is_clique = true;
-                    let mut bit = clique_candidates.next_set_bit(0);
-                    while bit.is_some() {
-                        let nei = bit.unwrap();
+                    for nei in clique_candidates {
                         if nei == bv {
-                            bit = clique_candidates.next_set_bit(nei + 1);
                             continue;
                         }
 
@@ -694,17 +731,13 @@ fn find_result(graph: &mut Graph,
                             is_clique = false;
                             break;
                         }
-                        bit = clique_candidates.next_set_bit(nei + 1);
                     }
 
                     if is_clique {
                         // println!("is clique");
                         let mut clique_c: HashSet<usize> = HashSet::new();
-                        bit = clique_candidates.next_set_bit(0);
-                        while bit.is_some() {
-                            let nei = bit.unwrap();
+                        for nei in clique_candidates {
                             clique_c.insert(b_graph.vert_map[nei]);
-                            bit = clique_candidates.next_set_bit(nei + 1);
                         }
                         clique.replace(clique_c);
                     } 
@@ -740,11 +773,8 @@ fn find_result(graph: &mut Graph,
                     vertices_to_update.clear();
                     let bv = *b_graph.b_invmap.get(&v).expect("correct map");
                     let clique_candidates = &b_graph.bitset_vec[bv];
-                    let mut bit = clique_candidates.next_set_bit(0);
-                    while bit.is_some() {
-                        let nei = bit.unwrap();
+                    for nei in clique_candidates {
                         vertices_to_update.push(nei);
-                        bit = clique_candidates.next_set_bit(nei + 1);
                     }
                     
                     for nei in &vertices_to_update {
