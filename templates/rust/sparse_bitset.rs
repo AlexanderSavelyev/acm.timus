@@ -106,6 +106,10 @@ impl SparseBitset {
         }
         return map_idx;
     }
+
+    fn merge_words(&mut self, map_idx: usize, word_idx: u32) {
+
+    }
     fn set(&mut self, bit_idx: usize) -> bool {
         println!("set {}", bit_idx);
         let word_idx = SparseBitset::word_index(bit_idx);
@@ -125,27 +129,32 @@ impl SparseBitset {
         }
         return false;
     }
-    // fn setc(&mut self, bit_idx: usize) -> bool {
-    //     let wordindex = DBitset::word_index(bit_idx);
-    //     let mut bit = bit_idx;
-    //     bit -= (wordindex << ADDRESS_BITS_PER_WORD);
-    //     self.expand_to(wordindex);
-    //     let w = self.words[wordindex];
-    //     self.words[wordindex] |= (1u64 << bit);
-    //     return w != self.words[wordindex];
-    // }
 
-    // fn reset(&mut self, bit_idx: usize) {
-    //     let wordindex = DBitset::word_index(bit_idx);
-    //     if wordindex >= self.words_in_use {
-    //         return;
-    //     }
-    //     let mut bit = bit_idx;
-    //     bit -= (wordindex << ADDRESS_BITS_PER_WORD);
+    fn reset(&mut self, bit_idx: usize) -> bool {
+        println!("reset {}", bit_idx);
+        let word_idx = SparseBitset::word_index(bit_idx);
+        let mut map_idx = self.find_map_idx(word_idx as u32);
 
-    //     self.words[wordindex] &= !(1u64 << bit);
-    //     self.recalculate_words_in_use();
-    // }
+        if self.words_map[map_idx].num_bits == 0 {
+            return false;
+        }
+
+        let mut bit = bit_idx;
+        bit -= (word_idx << ADDRESS_BITS_PER_WORD);
+        let word = self.words_map[map_idx].reference as usize;
+        let w = self.words[word];
+        self.words[word] &= !(1u64 << bit);
+        if w != self.words[word] {
+            self.words_map[map_idx].num_bits -= 1;
+            self.num_bits -= 1;
+            if self.words_map[map_idx].num_bits == 0 {
+                self.merge_words(map_idx, word_idx as u32);
+            }
+            return true;
+        }
+
+        return false;
+    }
 
     // fn get(&self, bit_idx: usize) -> bool {
     //     let word_index = DBitset::word_index(bit_idx);
