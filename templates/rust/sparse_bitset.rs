@@ -9,6 +9,7 @@ const BITS_PER_WORD: u16 = 1 << ADDRESS_BITS_PER_WORD;
 const WORD_MASK: u64 = 0xFFFFFFFFFFFFFFFF;
 
 #[allow(dead_code)]
+#[derive(Debug)]
 struct SparseMap {
     num_bits: u8,
     position: u32,
@@ -62,8 +63,9 @@ impl SparseBitset {
     fn find_map_idx(&self, word_idx: u32) -> usize {
         let mut size = self.words_map.len();
         let mut base = 0_usize;
+        println!("find word idx {}", word_idx);
 
-        while size > 1 {
+        while size >= 1 {
             // mid: [base..size)
             let half = size / 2;
             let mid = base + half;
@@ -78,17 +80,34 @@ impl SparseBitset {
         panic!("incorrect state");
     }
     fn split_words(&mut self, map_idx: usize, word_idx: u32) -> usize {
-        let sparse_map = &self.words_map[map_idx];
-        if sparse_map.position == word_idx && sparse_map.reference == word_idx {
-            self.words_map[map_idx].reference = self.words.len() as u32;
-            self.words.push(0);
+        let old_position = self.words_map[map_idx].position;
+        let old_reference = self.words_map[map_idx].reference;
+        let ref_idx = self.words.len() as u32;
+        self.words.push(0);
+        if old_position == word_idx && old_reference == word_idx {
+            self.words_map[map_idx].reference = ref_idx;
         } else {
-            let new_map = SparseMap::new(0, word_idx, self.words.len() as u32);
-            self.words.push(0);
+            let new_map = SparseMap::new(0, word_idx, ref_idx);
+
+            if old_position == word_idx {
+                self.words_map[map_idx].position += 1;
+                self.words_map.insert(map_idx, new_map);
+            } else if old_reference == word_idx {
+                self.words_map[map_idx].reference -= 1;
+                self.words_map.insert(map_idx + 1, new_map);
+                return map_idx + 1;
+            } else {
+                self.words_map.insert(map_idx, SparseMap::new(0, old_position, word_idx - 1));
+                self.words_map[map_idx + 1].position = word_idx + 1;
+                self.words_map.insert(map_idx + 1, new_map);
+                return map_idx + 1;
+            }
+            
         }
         return map_idx;
     }
     fn set(&mut self, bit_idx: usize) -> bool {
+        println!("set {}", bit_idx);
         let word_idx = SparseBitset::word_index(bit_idx);
         let mut map_idx = self.find_map_idx(word_idx as u32);
         if self.words_map[map_idx].num_bits == 0 {
@@ -328,7 +347,26 @@ mod tests {
     fn test_bitset1() {
         let mut b = SparseBitset::new(1000);
         // assert_eq!(false, b.get(65));
-        // b.set(65);
+        b.set(65);
+        println!("words_map {:?}", b.words_map);
+        println!("words {:?}", b.words);
+        println!("num_bits {:?}", b.num_bits);
+        b.set(64);
+        println!("words_map {:?}", b.words_map);
+        println!("words {:?}", b.words);
+        println!("num_bits {:?}", b.num_bits);
+        b.set(15);
+        println!("words_map {:?}", b.words_map);
+        println!("words {:?}", b.words);
+        println!("num_bits {:?}", b.num_bits);
+        b.set(70);
+        println!("words_map {:?}", b.words_map);
+        println!("words {:?}", b.words);
+        println!("num_bits {:?}", b.num_bits);
+        b.set(200);
+        println!("words_map {:?}", b.words_map);
+        println!("words {:?}", b.words);
+        println!("num_bits {:?}", b.num_bits);
         // assert_eq!(true, b.get(65));
     }
 
