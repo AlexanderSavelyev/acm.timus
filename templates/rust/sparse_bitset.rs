@@ -63,7 +63,7 @@ impl SparseBitset {
     fn find_map_idx(&self, word_idx: u32) -> usize {
         let mut size = self.words_map.len();
         let mut base = 0_usize;
-        println!("find word idx {}", word_idx);
+        // println!("find word idx {}", word_idx);
 
         while size >= 1 {
             // mid: [base..size)
@@ -145,7 +145,7 @@ impl SparseBitset {
         }
     }
     fn set(&mut self, bit_idx: usize) -> bool {
-        println!("set {}", bit_idx);
+        // println!("set {}", bit_idx);
         let word_idx = SparseBitset::word_index(bit_idx);
         let mut map_idx = self.find_map_idx(word_idx as u32);
         if self.words_map[map_idx].num_bits == 0 {
@@ -165,7 +165,7 @@ impl SparseBitset {
     }
 
     fn reset(&mut self, bit_idx: usize) -> bool {
-        println!("reset {}", bit_idx);
+        // println!("reset {}", bit_idx);
         let word_idx = SparseBitset::word_index(bit_idx);
         let map_idx = self.find_map_idx(word_idx as u32);
 
@@ -190,33 +190,21 @@ impl SparseBitset {
         return false;
     }
 
-    // fn get(&self, bit_idx: usize) -> bool {
-    //     let word_index = DBitset::word_index(bit_idx);
-    //     let mut bit = bit_idx;
-    //     bit -= word_index << ADDRESS_BITS_PER_WORD;
-    //     (word_index < self.words_in_use) && ((self.words[word_index] & (1u64 << bit)) != 0)
-    // }
-    // fn expand_to(&mut self, word_idx: usize) {
-    //     let words_required = word_idx + 1;
-    //     if self.words_in_use < words_required {
-    //         self.words_in_use = words_required;
-    //     }
-    //     if self.words.len() < words_required {
-    //         self.words.resize(words_required, 0);
-    //     }
-    // }
+    fn get(&self, bit_idx: usize) -> bool {
+        let word_idx = SparseBitset::word_index(bit_idx);
+        let map_idx = self.find_map_idx(word_idx as u32);
 
-    // fn recalculate_words_in_use(&mut self) {
-    //     self.words_in_use = 0;
-    //     for i in (0..self.words.len()).rev() {
-    //         if self.words[i] != 0 {
-    //             self.words_in_use = i + 1;
-    //             break;
-    //         }
-    //     }
-    // }
+        if self.words_map[map_idx].num_bits == 0 {
+            return false;
+        }
+        let mut bit = bit_idx;
+        bit -= word_idx << ADDRESS_BITS_PER_WORD;
+        let word = self.words_map[map_idx].reference as usize;
 
-    // fn and_with(&mut self, set: &DBitset) {
+        (self.words[word] & (1u64 << bit)) != 0
+    }
+
+    // fn and_with(&mut self, set: &SparseBitset) {
     //     let mut word_len = self.words_in_use;
     //     if self.words_in_use > set.words_in_use {
     //         word_len = set.words_in_use;
@@ -230,25 +218,28 @@ impl SparseBitset {
     //     }
     //     self.recalculate_words_in_use();
     // }
-    // fn and_not_with(&mut self, set: &DBitset) {
+    // fn and_not_with(&mut self, set: &SparseBitset) {
     //     let w_min = cmp::min(self.words_in_use, set.words_in_use);
     //     for i in 0..w_min {
     //         self.words[i] &= !set.words[i];
     //     }
     //     self.recalculate_words_in_use();
     // }
-    // fn is_subset_of(&self, set: &DBitset) -> bool {
-    //     if self.words_in_use > set.words_in_use {
-    //         return false;
-    //     }
-    //     for i in 0..self.words_in_use {
-    //         if (self.words[i] & (!set.words[i])) != 0 {
-    //             return false;
-    //         }
-    //     }
-    //     return true;
-    // }
-    // fn or_with(&mut self, set: &DBitset) -> bool {
+    fn is_subset_of(&self, set: &SparseBitset) -> bool {
+        for i in 0..self.words_map.len() {
+            
+        }
+        if self.words_in_use > set.words_in_use {
+            return false;
+        }
+        for i in 0..self.words_in_use {
+            if (self.words[i] & (!set.words[i])) != 0 {
+                return false;
+            }
+        }
+        return true;
+    }
+    // fn or_with(&mut self, set: &SparseBitset) -> bool {
     //     let mut changed = false;
     //     if self.words_in_use < set.words_in_use {
     //         self.words_in_use = set.words_in_use;
@@ -307,7 +298,7 @@ impl SparseBitset {
 
     // fn next_set_bit(&self, from_index: usize) -> Option<usize> {
     //     let mut from_idx = from_index;
-    //     let mut u = DBitset::word_index(from_idx);
+    //     let mut u = SparseBitset::word_index(from_idx);
     //     if u >= self.words_in_use {
     //         return None;
     //     }
@@ -321,7 +312,7 @@ impl SparseBitset {
     //         word = self.words[u];
     //     }
     //     let bit = u << ADDRESS_BITS_PER_WORD;
-    //     let lbit = DBitset::least_significant_bit_position(word);
+    //     let lbit = SparseBitset::least_significant_bit_position(word);
 
     //     if bit == 0 && lbit.is_none() {
     //         return None;
@@ -391,38 +382,43 @@ mod tests {
         let mut b = SparseBitset::new(1000);
         // assert_eq!(false, b.get(65));
         b.set(65);
-        println!("words_map {:?}", b.words_map);
-        println!("words {:?}", b.words);
-        println!("num_bits {:?}", b.num_bits);
+        assert_eq!(3, b.words_map.len());
+        assert_eq!(1, b.words.len());
+        assert_eq!(1, b.num_bits);
+        // println!("words_map {:?}", b.words_map);
+        // println!("words {:?}", b.words);
+        // println!("num_bits {:?}", b.num_bits);
         b.set(64);
-        println!("words_map {:?}", b.words_map);
-        println!("words {:?}", b.words);
-        println!("num_bits {:?}", b.num_bits);
+        assert_eq!(3, b.words_map.len());
+        assert_eq!(1, b.words.len());
+        assert_eq!(2, b.num_bits);
         b.set(15);
-        println!("words_map {:?}", b.words_map);
-        println!("words {:?}", b.words);
-        println!("num_bits {:?}", b.num_bits);
+        assert_eq!(3, b.words_map.len());
+        assert_eq!(2, b.words.len());
+        assert_eq!(3, b.num_bits);
         b.set(70);
-        println!("words_map {:?}", b.words_map);
-        println!("words {:?}", b.words);
-        println!("num_bits {:?}", b.num_bits);
+        assert_eq!(3, b.words_map.len());
+        assert_eq!(2, b.words.len());
+        assert_eq!(4, b.num_bits);
         b.set(200);
-        println!("words_map {:?}", b.words_map);
-        println!("words {:?}", b.words);
-        println!("num_bits {:?}", b.num_bits);
+        assert_eq!(5, b.words_map.len());
+        assert_eq!(3, b.words.len());
+        assert_eq!(5, b.num_bits);
         // assert_eq!(true, b.get(65));
     }
 
-    // #[test]
-    // fn test_bitset2() {
-    //     let mut b = DBitset::new(1000);
-    //     b.set(1025);
-    //     assert_eq!(true, b.get(1025));
-    // }
+    #[test]
+    fn test_bitset2() {
+        let mut b = SparseBitset::new(1000);
+        b.set(925);
+        assert_eq!(true, b.get(925));
+        assert_eq!(false, b.get(800));
+        assert_eq!(false, b.get(926));
+    }
     // #[test]
     // fn test_bitset3() {
-    //     let mut b1 = DBitset::new(1000);
-    //     let mut b2 = DBitset::new(1000);
+    //     let mut b1 = SparseBitset::new(1000);
+    //     let mut b2 = SparseBitset::new(1000);
     //     b1.set(1);
     //     b1.set(5);
     //     b1.set(6);
@@ -440,7 +436,7 @@ mod tests {
 
     // #[test]
     // fn test_bitset4() {
-    //     let mut b = DBitset::new(1000);
+    //     let mut b = SparseBitset::new(1000);
     //     b.set(0);
     //     b.set(1);
     //     b.set(5);
@@ -463,7 +459,7 @@ mod tests {
     // }
     // #[test]
     // fn test_bitset5() {
-    //     let mut b = DBitset::new(1024);
+    //     let mut b = SparseBitset::new(1024);
     //     b.set(0);
     //     b.set(1);
     //     b.set(5);
@@ -487,7 +483,7 @@ mod tests {
     //     assert_eq!(Some(50000), bit);
     //     bit = b.next_set_bit(bit.unwrap() + 1);
     //     assert_eq!(None, bit);
-    //     let mut b2 = DBitset::new(1024);
+    //     let mut b2 = SparseBitset::new(1024);
     //     b2.or_with(&b);
 
     //     bit = b2.next_set_bit(0);
@@ -511,7 +507,7 @@ mod tests {
 
     // #[test]
     // fn test_bitset6() {
-    //     let mut b = DBitset::new(1000);
+    //     let mut b = SparseBitset::new(1000);
     //     b.set(0);
     //     b.set(1);
     //     b.set(5);
