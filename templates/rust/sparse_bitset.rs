@@ -108,7 +108,41 @@ impl SparseBitset {
     }
 
     fn merge_words(&mut self, map_idx: usize, word_idx: u32) {
-
+        if map_idx > 0 && map_idx < self.words_map.len() - 1 {
+            let next = map_idx + 1;
+            let prev = map_idx - 1;
+            if self.words_map[prev].num_bits == 0 && self.words_map[next].num_bits == 0 {
+                self.words_map[prev].reference = self.words_map[next].reference;
+                self.words_map.remove(map_idx);
+                self.words_map.remove(map_idx);
+            } else if self.words_map[prev].num_bits == 0 && self.words_map[next].num_bits > 0 {
+                self.words_map[prev].reference = word_idx;
+                self.words_map.remove(map_idx);
+            } else if self.words_map[prev].num_bits > 0 && self.words_map[next].num_bits == 0 {
+                self.words_map[next].position = word_idx;
+                self.words_map.remove(map_idx);
+            } else {
+                self.words_map[map_idx].reference = word_idx;
+            }
+        } else if map_idx > 0 {
+            let prev = map_idx - 1;
+            if self.words_map[prev].num_bits == 0 {
+                self.words_map[prev].reference = word_idx;
+                self.words_map.remove(map_idx);
+            } else {
+                self.words_map[map_idx].reference = word_idx;
+            }
+        } else if map_idx < self.words_map.len() - 1 {
+            let next = map_idx + 1;
+            if self.words_map[next].num_bits == 0 {
+                self.words_map[next].position = word_idx;
+                self.words_map.remove(map_idx);
+            } else {
+                self.words_map[map_idx].reference = word_idx;
+            }
+        } else {
+            self.words_map[map_idx].reference = word_idx;
+        }
     }
     fn set(&mut self, bit_idx: usize) -> bool {
         println!("set {}", bit_idx);
@@ -133,7 +167,7 @@ impl SparseBitset {
     fn reset(&mut self, bit_idx: usize) -> bool {
         println!("reset {}", bit_idx);
         let word_idx = SparseBitset::word_index(bit_idx);
-        let mut map_idx = self.find_map_idx(word_idx as u32);
+        let map_idx = self.find_map_idx(word_idx as u32);
 
         if self.words_map[map_idx].num_bits == 0 {
             return false;
