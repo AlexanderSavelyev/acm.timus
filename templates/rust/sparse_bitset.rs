@@ -226,15 +226,34 @@ impl SparseBitset {
     //     self.recalculate_words_in_use();
     // }
     fn is_subset_of(&self, set: &SparseBitset) -> bool {
-        for i in 0..self.words_map.len() {
-            
-        }
-        if self.words_in_use > set.words_in_use {
-            return false;
-        }
-        for i in 0..self.words_in_use {
-            if (self.words[i] & (!set.words[i])) != 0 {
-                return false;
+        let mut map_idx = 0_usize;
+        for wm in &self.words_map {
+            if wm.num_bits == 0 {
+                continue;
+            }
+            let word_idx = wm.position;
+            // println!("start {}", word_idx);
+            loop {
+                let set_wm = &set.words_map[map_idx];
+                if set_wm.position <= word_idx {
+                    if set_wm.num_bits == 0 && word_idx <= set_wm.reference {
+                        // println!("return false num bits 0 {}", word_idx);
+                        return false;
+                    }
+                    if set_wm.position == word_idx && set_wm.num_bits > 0{
+                        // println!("check set {}", word_idx);
+                        if (self.words[wm.reference as usize] & (!set.words[set_wm.reference as usize])) != 0 {
+                            // println!("return false & {}", word_idx);
+                            return false;
+                        }
+                        break;
+                    }
+                }
+                map_idx += 1;
+                if map_idx >= set.words_map.len() {
+                    // println!("return false len {}", map_idx);
+                    return false;
+                }
             }
         }
         return true;
@@ -258,43 +277,43 @@ impl SparseBitset {
     //     return changed;
     // }
 
-    // fn least_significant_bit_position(m: u64) -> Option<usize> {
-    //     let mut n = m;
-    //     if n == 0 {
-    //         return None;
-    //     }
+    fn least_significant_bit_position(m: u64) -> Option<usize> {
+        let mut n = m;
+        if n == 0 {
+            return None;
+        }
 
-    //     let mut pos = 63usize;
-    //     if n & 0x00000000FFFFFFFFu64 != 0 {
-    //         pos -= 32;
-    //     } else {
-    //         n >>= 32;
-    //     }
-    //     if n & 0x000000000000FFFFu64 != 0 {
-    //         pos -= 16;
-    //     } else {
-    //         n >>= 16;
-    //     }
-    //     if n & 0x00000000000000FFu64 != 0 {
-    //         pos -= 8;
-    //     } else {
-    //         n >>= 8;
-    //     }
-    //     if n & 0x000000000000000Fu64 != 0 {
-    //         pos -= 4;
-    //     } else {
-    //         n >>= 4;
-    //     }
-    //     if n & 0x0000000000000003u64 != 0 {
-    //         pos -= 2;
-    //     } else {
-    //         n >>= 2;
-    //     }
-    //     if n & 0x0000000000000001u64 != 0 {
-    //         pos -= 1;
-    //     }
-    //     return Some(pos);
-    // }
+        let mut pos = 63usize;
+        if n & 0x00000000FFFFFFFFu64 != 0 {
+            pos -= 32;
+        } else {
+            n >>= 32;
+        }
+        if n & 0x000000000000FFFFu64 != 0 {
+            pos -= 16;
+        } else {
+            n >>= 16;
+        }
+        if n & 0x00000000000000FFu64 != 0 {
+            pos -= 8;
+        } else {
+            n >>= 8;
+        }
+        if n & 0x000000000000000Fu64 != 0 {
+            pos -= 4;
+        } else {
+            n >>= 4;
+        }
+        if n & 0x0000000000000003u64 != 0 {
+            pos -= 2;
+        } else {
+            n >>= 2;
+        }
+        if n & 0x0000000000000001u64 != 0 {
+            pos -= 1;
+        }
+        return Some(pos);
+    }
 
     // fn next_set_bit(&self, from_index: usize) -> Option<usize> {
     //     let mut from_idx = from_index;
@@ -415,24 +434,24 @@ mod tests {
         assert_eq!(false, b.get(800));
         assert_eq!(false, b.get(926));
     }
-    // #[test]
-    // fn test_bitset3() {
-    //     let mut b1 = SparseBitset::new(1000);
-    //     let mut b2 = SparseBitset::new(1000);
-    //     b1.set(1);
-    //     b1.set(5);
-    //     b1.set(6);
-    //     b1.set(200);
-    //     b2.set(1);
-    //     b2.set(5);
-    //     b2.set(6);
-    //     b2.set(200);
-    //     b2.set(260);
-    //     b2.set(10);
-    //     assert_eq!(true, b1.is_subset_of(&b2));
-    //     b1.set(7);
-    //     assert_eq!(false, b1.is_subset_of(&b2));
-    // }
+    #[test]
+    fn test_bitset3() {
+        let mut b1 = SparseBitset::new(1000);
+        let mut b2 = SparseBitset::new(1000);
+        b1.set(1);
+        b1.set(5);
+        b1.set(6);
+        b1.set(200);
+        b2.set(1);
+        b2.set(5);
+        b2.set(6);
+        b2.set(200);
+        b2.set(260);
+        b2.set(10);
+        assert_eq!(true, b1.is_subset_of(&b2));
+        b1.set(7);
+        assert_eq!(false, b1.is_subset_of(&b2));
+    }
 
     // #[test]
     // fn test_bitset4() {
