@@ -315,30 +315,41 @@ impl SparseBitset {
         return Some(pos);
     }
 
-    // fn next_set_bit(&self, from_index: usize) -> Option<usize> {
-    //     let mut from_idx = from_index;
-    //     let mut u = SparseBitset::word_index(from_idx);
-    //     if u >= self.words_in_use {
-    //         return None;
-    //     }
-    //     from_idx -= (u << ADDRESS_BITS_PER_WORD);
-    //     let mut word = self.words[u] & (WORD_MASK << from_idx);
-    //     while word == 0 {
-    //         u += 1;
-    //         if u >= self.words_in_use {
-    //             return None;
-    //         }
-    //         word = self.words[u];
-    //     }
-    //     let bit = u << ADDRESS_BITS_PER_WORD;
-    //     let lbit = SparseBitset::least_significant_bit_position(word);
+    fn next_set_bit(&self, from_index: usize, from_map: usize) -> Option<usize> {
+        let mut from_idx = from_index;
+        let mut map_idx = from_map;
+        let mut u = SparseBitset::word_index(from_idx);
+        loop {
+            if map_idx >= self.words_map.len() {
+                return None;
+            }
+            let wm = &self.words_map[map_idx];
+            if wm.num_bits > 0 && wm.position == u {
 
-    //     if bit == 0 && lbit.is_none() {
-    //         return None;
-    //     }
+            }
+            map_idx += 1;
+        }
+        // if u >= self.words_in_use {
+        //     return None;
+        // }
+        from_idx -= (u << ADDRESS_BITS_PER_WORD);
+        let mut word = self.words[u] & (WORD_MASK << from_idx);
+        while word == 0 {
+            u += 1;
+            if u >= self.words_in_use {
+                return None;
+            }
+            word = self.words[u];
+        }
+        let bit = u << ADDRESS_BITS_PER_WORD;
+        let lbit = SparseBitset::least_significant_bit_position(word);
 
-    //     return Some(bit + lbit.unwrap());
-    // }
+        if bit == 0 && lbit.is_none() {
+            return None;
+        }
+
+        return Some(bit + lbit.unwrap());
+    }
 
     // let mut bit = cell.next_set_bit(0);
     // while bit.is_some() {
@@ -351,44 +362,44 @@ impl SparseBitset {
 
 
 
-// impl<'a> IntoIterator for &'a SparseBitset {
-//     type Item = usize;
-//     type IntoIter = BitsetIterator<'a>;
+impl<'a> IntoIterator for &'a SparseBitset {
+    type Item = usize;
+    type IntoIter = BitsetIterator<'a>;
 
-//     fn into_iter(self) -> Self::IntoIter {
-//         BitsetIterator {
-//             bitset: self,
-//             index: None,
-//         }
-//     }
-// }
+    fn into_iter(self) -> Self::IntoIter {
+        BitsetIterator {
+            bitset: self,
+            index: None,
+        }
+    }
+}
 
-// struct SBitsetIterator<'a> {
-//     bitset: &'a SparseBitset,
-//     index: Option<usize>,
-// }
+struct SBitsetIterator<'a> {
+    bitset: &'a SparseBitset,
+    index: Option<usize>,
+}
 
-// impl<'a> Iterator for SBitsetIterator<'a> {
-//     type Item = usize;
-//     fn next(&mut self) -> Option<usize> {
-//         let start_idx = match self.index {
-//             Some(idx) => {
-//                 idx + 1
-//             }, 
-//             None => {
-//                 0
-//             }
-//         };
-//         match self.bitset.next_set_bit(start_idx) {
-//             Some(bit) => {
-//                 self.index.replace(bit);
-//                 return Some(bit);
-//             },
-//             None => {
-//                 return None;
-//             }
-//         }
-//     }
+impl<'a> Iterator for SBitsetIterator<'a> {
+    type Item = usize;
+    fn next(&mut self) -> Option<usize> {
+        let start_idx = match self.index {
+            Some(idx) => {
+                idx + 1
+            }, 
+            None => {
+                0
+            }
+        };
+        match self.bitset.next_set_bit(start_idx) {
+            Some(bit) => {
+                self.index.replace(bit);
+                return Some(bit);
+            },
+            None => {
+                return None;
+            }
+        }
+    }
 
 
 #[cfg(test)]
