@@ -1,5 +1,5 @@
 
-use std::cmp;
+// use std::cmp;
 
 #[allow(dead_code)]
 const ADDRESS_BITS_PER_WORD: u16 = 6;
@@ -315,40 +315,34 @@ impl SparseBitset {
         return Some(pos);
     }
 
-    fn next_set_bit(&self, from_index: usize, from_map: usize) -> Option<usize> {
+    fn next_set_bit(&self, from_index: usize, from_map: usize) -> Option<(usize, usize)> {
         let mut from_idx = from_index;
         let mut map_idx = from_map;
-        let mut u = SparseBitset::word_index(from_idx);
+        let from_word = SparseBitset::word_index(from_idx);
+        let mut word = 0_u64;
         loop {
             if map_idx >= self.words_map.len() {
                 return None;
             }
             let wm = &self.words_map[map_idx];
-            if wm.num_bits > 0 && wm.position == u {
-
+            if wm.num_bits > 0 {
+                if wm.position == (from_word as u32) {
+                    from_idx -= (from_word << ADDRESS_BITS_PER_WORD);
+                    word = self.words[wm.reference as usize] & (WORD_MASK << from_idx);
+                } else {
+                    word = self.words[wm.reference as usize];
+                }
             }
+
+            if word != 0 {
+                let bit = (wm.position as usize) << ADDRESS_BITS_PER_WORD;
+                let lbit = SparseBitset::least_significant_bit_position(word);
+                
+                return Some((bit + lbit.unwrap(), map_idx));
+            }
+
             map_idx += 1;
         }
-        // if u >= self.words_in_use {
-        //     return None;
-        // }
-        from_idx -= (u << ADDRESS_BITS_PER_WORD);
-        let mut word = self.words[u] & (WORD_MASK << from_idx);
-        while word == 0 {
-            u += 1;
-            if u >= self.words_in_use {
-                return None;
-            }
-            word = self.words[u];
-        }
-        let bit = u << ADDRESS_BITS_PER_WORD;
-        let lbit = SparseBitset::least_significant_bit_position(word);
-
-        if bit == 0 && lbit.is_none() {
-            return None;
-        }
-
-        return Some(bit + lbit.unwrap());
     }
 
     // let mut bit = cell.next_set_bit(0);
@@ -364,12 +358,13 @@ impl SparseBitset {
 
 impl<'a> IntoIterator for &'a SparseBitset {
     type Item = usize;
-    type IntoIter = BitsetIterator<'a>;
+    type IntoIter = SBitsetIterator<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
-        BitsetIterator {
+        SBitsetIterator {
             bitset: self,
             index: None,
+            map_idx: 0,
         }
     }
 }
@@ -377,6 +372,7 @@ impl<'a> IntoIterator for &'a SparseBitset {
 struct SBitsetIterator<'a> {
     bitset: &'a SparseBitset,
     index: Option<usize>,
+    map_idx: usize,
 }
 
 impl<'a> Iterator for SBitsetIterator<'a> {
@@ -390,9 +386,10 @@ impl<'a> Iterator for SBitsetIterator<'a> {
                 0
             }
         };
-        match self.bitset.next_set_bit(start_idx) {
-            Some(bit) => {
+        match self.bitset.next_set_bit(start_idx, self.map_idx) {
+            Some((bit, from_map)) => {
                 self.index.replace(bit);
+                self.map_idx = from_map;
                 return Some(bit);
             },
             None => {
@@ -400,6 +397,7 @@ impl<'a> Iterator for SBitsetIterator<'a> {
             }
         }
     }
+}
 
 
 #[cfg(test)]
@@ -464,29 +462,22 @@ mod tests {
         assert_eq!(false, b1.is_subset_of(&b2));
     }
 
-    // #[test]
-    // fn test_bitset4() {
-    //     let mut b = SparseBitset::new(1000);
-    //     b.set(0);
-    //     b.set(1);
-    //     b.set(5);
-    //     b.set(6);
-    //     b.set(200);
-    //     let mut bit = b.next_set_bit(0);
-    //     assert_eq!(Some(0), bit);
-    //     bit = b.next_set_bit(bit.unwrap() + 1);
-    //     assert_eq!(Some(1), bit);
-    //     bit = b.next_set_bit(bit.unwrap() + 1);
-    //     assert_eq!(Some(5), bit);
-    //     bit = b.next_set_bit(bit.unwrap() + 1);
-    //     assert_eq!(Some(6), bit);
-    //     bit = b.next_set_bit(bit.unwrap() + 1);
-    //     assert_eq!(Some(200), bit);
-    //     bit = b.next_set_bit(bit.unwrap() + 1);
-    //     assert_eq!(None, bit);
+    #[test]
+    fn test_bitset4() {
+        let mut b = SparseBitset::new(1000);
+        b.set(0);
+        b.set(1);
+        b.set(5);
+        b.set(6);
+        b.set(200);
 
-    //     // println!("{:?}", b.next_set_bit(0));
-    // }
+        let mut res: Vec<String> = Vec::new();
+        for bit in &b {
+            res.push(bit.to_string());
+        }
+        assert_eq!("0 1 5 6 200", res.join(" "));
+    }
+
     // #[test]
     // fn test_bitset5() {
     //     let mut b = SparseBitset::new(1024);
