@@ -406,88 +406,6 @@ impl<'a> Iterator for SBitsetIterator<'a> {
 
 
 
-#[allow(dead_code)]
-fn find_clique_bitset(graph: &mut Vec<DBitset>, vert_map: &mut HashMap<usize, usize>, k: usize) -> Option<HashSet<usize>> {
-    let mut vertex_to_remove: Vec<usize> = Vec::with_capacity(graph.len());
-    let mut vertices_to_update: Vec<usize> = Vec::with_capacity(graph.len());
-    loop {
-        vertex_to_remove.clear();
-        for (v1, v1_len) in vert_map.iter() {
-            if *v1_len != k - 1 {
-                continue;
-            }
-            // println!("v {}", v1);
-            let clique_candidates = &graph[*v1];
-            let mut is_clique = true;
-            let mut bit = clique_candidates.next_set_bit(0);
-            while bit.is_some() {
-                let nei = bit.unwrap();
-                if nei == *v1 {
-                    bit = clique_candidates.next_set_bit(nei + 1);
-                    continue;
-                }
-
-                if !clique_candidates.is_subset_of(&graph[nei]) {
-                    is_clique = false;
-                    break;
-                }
-                bit = clique_candidates.next_set_bit(nei + 1);
-            }
-
-            if is_clique {
-                // println!("is clique");
-                let mut clique: HashSet<usize> = HashSet::new();
-                bit = clique_candidates.next_set_bit(0);
-                while bit.is_some() {
-                    let nei = bit.unwrap();
-                    clique.insert(nei);
-                    bit = clique_candidates.next_set_bit(nei + 1);
-                }
-                return Some(clique);
-            } 
-            
-            vertex_to_remove.push(*v1);
-        }
-        if vertex_to_remove.len() == 0 {
-            break;
-        }
-        for v in &vertex_to_remove {
-            vertices_to_update.clear();
-            let clique_candidates = &graph[*v];
-            let mut bit = clique_candidates.next_set_bit(0);
-            while bit.is_some() {
-                let nei = bit.unwrap();
-                vertices_to_update.push(nei);
-                
-                let vert_to_update = vert_map.get_mut(&nei);
-                match vert_to_update {
-                    Some(vert) => {
-                        *vert -= 1;
-                    }, 
-                    None => {
-                    }
-                }
-
-                bit = clique_candidates.next_set_bit(nei + 1);
-            }
-            vert_map.remove(&v);
-
-            for nei in &vertices_to_update {
-                graph[*nei].reset(*v);
-            }
-        }
-        // println!("before {:?}", vert_map);
-
-        // println!("after {:?}", vert_map);
-
-        if vert_map.len() < k {
-            break;
-        }
-    }
-
-    return None;
-}
-
 struct BitsetGraph {
     vec_matrix: Vec<SparseBitset>,
     vertices: BTreeSet<usize>,
@@ -515,10 +433,23 @@ impl BitsetGraph {
         self.vec_matrix[v2].set(v1);
     }
 
+    fn remove_vertex(&mut self, v: usize, cache: &mut Vec<usize>) {
+        cache.clear();
+        for nei in &self.vec_matrix[v] {
+            cache.push(nei);
+        }
+
+        for nei in cache {
+            self.vec_matrix[*nei].reset(v);
+        }
+        self.vertices.remove(&v);
+    }
+
 }
 
 fn remove_vertices_min_nei(graph: &mut BitsetGraph, min_nei: usize) {
     let mut vertices_queue: HashSet<usize> = HashSet::new();
+    let mut vec_cache: Vec<usize> = Vec::new();
 
     for i in &graph.vertices {
         vertices_queue.insert(*i);
@@ -530,11 +461,14 @@ fn remove_vertices_min_nei(graph: &mut BitsetGraph, min_nei: usize) {
             Some(next_idx) => {
                 vertices_queue.remove(&next_idx);
                 let next_vertex = &graph.vec_matrix[next_idx];
+                if next_vertex.num_bits == 0 {
+                    continue;
+                }
                 if next_vertex.num_bits - 1 < min_nei {
                     for nei in next_vertex {
                         vertices_queue.insert(nei);
                     }
-                    graph.vertices.remove(&next_idx);
+                    graph.remove_vertex(next_idx, &mut vec_cache);
                 }
             },
             None => break
@@ -544,110 +478,67 @@ fn remove_vertices_min_nei(graph: &mut BitsetGraph, min_nei: usize) {
 
 
 
-fn find_result(graph: &mut Graph, 
-                        component: &HashSet<usize>, 
-                        clique: &mut Option<HashSet<usize>>, 
-                        result_set: &mut Option<HashSet<usize>>,
+fn find_result(graph: &mut BitsetGraph, 
+                        clique: &mut Option<BTreeSet<usize>>, 
+                        result_set: &mut Option<BTreeSet<usize>>,
                         k: usize) {
-    let mut bitset_graph: Option<BitsetGraph> = None;
-    if clique.is_none() {
-        bitset_graph = Some(build_bitset_graph(&graph, component));
-    }
     let mut vertex_to_remove: Vec<usize> = Vec::new();
     let mut vertices_to_update: Vec<usize> = Vec::new();
 
-    let mut comp_vert = component.clone();
     loop {
-        if comp_vert.len() < k {
+        if graph.vertices.len() < k {
             break;
         }
         vertex_to_remove.clear();
-        for &v in &comp_vert {
-            match &bitset_graph {
-                Some(b_graph) => {
-                    let bv = *b_graph.b_invmap.get(&v).expect("correct map");
-                    let vert_len = b_graph.vert_len[bv];
-                    // println!("vertex {} len {}", v+1, vert_len);
-                    if vert_len < k - 1 {
-                        vertex_to_remove.push(v);
-                        continue;
-                    } else if vert_len >= k {
-                        continue;
-                    }
-                    if clique.is_some() {
-                        vertex_to_remove.push(v);
-                        continue;
-                    }
 
-                    let clique_candidates = &b_graph.bitset_vec[bv];
-                    let mut is_clique = true;
-                    for nei in clique_candidates {
-                        if nei == bv {
-                            continue;
-                        }
+        for &v in &graph.vertices {
+            let vert_len = graph.vec_matrix[v].num_bits - 1;
+            if vert_len < k - 1 {
+                vertex_to_remove.push(v);
+                continue;
+            } else if vert_len >= k {
+                continue;
+            }
+            if clique.is_some() {
+                vertex_to_remove.push(v);
+                continue;
+            }
+            let clique_candidates = &graph.vec_matrix[v];
+            let mut is_clique = true;
+            for nei in clique_candidates {
+                if nei == v {
+                    continue;
+                }
 
-                        if !clique_candidates.is_subset_of(&b_graph.bitset_vec[nei]) {
-                            is_clique = false;
-                            break;
-                        }
-                    }
-
-                    if is_clique {
-                        // println!("is clique");
-                        let mut clique_c: HashSet<usize> = HashSet::new();
-                        for nei in clique_candidates {
-                            clique_c.insert(b_graph.vert_map[nei]);
-                        }
-                        clique.replace(clique_c);
-                    } 
-
-                },
-                None => {
-                    if graph.get_vertex(v).nei_vert.len() >= k {
-                        continue;
-                    }
+                if !clique_candidates.is_subset_of(&graph.vec_matrix[nei]) {
+                    is_clique = false;
+                    break;
                 }
             }
-
-
+            if is_clique {
+                // println!("is clique");
+                let mut clique_c: BTreeSet<usize> = BTreeSet::new();
+                for nei in clique_candidates {
+                    clique_c.insert(nei);
+                }
+                clique.replace(clique_c);
+            }
             vertex_to_remove.push(v);
         }
 
         // println!("vertex_to_remove {:?}", vertex_to_remove);
         
         if vertex_to_remove.len() == 0 {
-            if comp_vert.len() > k {
-                result_set.replace(comp_vert.clone());
+            if graph.vertices.len() > k {
+                result_set.replace(graph.vertices.clone());
             }
             break;
         }
 
         for &v in &vertex_to_remove {
-            comp_vert.remove(&v);
+            graph.remove_vertex(v, &mut vertices_to_update);
         }
 
-        match bitset_graph.as_mut() {
-            Some(b_graph) => {
-                for v in &vertex_to_remove {
-                    vertices_to_update.clear();
-                    let bv = *b_graph.b_invmap.get(&v).expect("correct map");
-                    let clique_candidates = &b_graph.bitset_vec[bv];
-                    for nei in clique_candidates {
-                        vertices_to_update.push(nei);
-                    }
-                    
-                    for nei in &vertices_to_update {
-                        b_graph.bitset_vec[*nei].reset(bv);
-                        b_graph.vert_len[*nei] = b_graph.vert_len[*nei] - 1;
-                    }
-                }
-            },
-            None => {
-                for &v in &vertex_to_remove {
-                    graph.remove_vertex(v);
-                }
-            }
-        }
     }
 }
 
@@ -698,22 +589,7 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
         let mut clique: Option<BTreeSet<usize>> = None;
         let mut result_set: Option<BTreeSet<usize>> = None;
 
-        for component in &connected_components {
-            // println!("component.len() {}", component.len());
-            if component.len() == k {
-                if clique.is_some() {
-                    continue;
-                }
-                clique = Some(component.clone());
-                continue;
-            }
-            
-            find_result(&mut graph, &component, &mut clique, &mut result_set, k);
-            if result_set.is_some() {
-                break;
-            }
-
-        }
+        find_result(&mut graph, &mut clique, &mut result_set, k);
 
         match result_set {
             Some(vertices) => {
@@ -794,9 +670,9 @@ mod tests {
                 assert_eq!(
                     res,
                     "2
-1 2 3 5
+1 2 3 4
 1 10
-1 10 2 3 4 5 6 7 8 9
+1 2 3 4 5 6 7 8 9 10
 -1
 "
         );
@@ -826,7 +702,7 @@ mod tests {
                 assert_eq!(
                     res,
                     "2
-3 1 2
+1 2 3
 2
 1 2
 "
@@ -914,12 +790,12 @@ mod tests {
                 assert_eq!(
                     res,
                     "2
-4 1
+1 4
 1 2
 2 3
 -1
 2
-3 1 5 4
+1 3 4 5
 -1
 -1
 2
