@@ -1,12 +1,9 @@
-// extern crate rand;
 use std::collections::{BTreeSet, HashSet};
 use std::io::prelude::*;
 use std::io::{self, BufReader};
 // use std::collections::hash_set::Iter;
 // use std::cmp;
-// use std::time::{Duration, Instant};
-// use rand::Rng;
-// use rand::prelude::*;
+
 
 
 
@@ -634,43 +631,46 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
         }
     }
 }
+extern crate rand;
+use std::time::{Duration, Instant};
+use rand::Rng;
+use rand::prelude::*;
 
 fn main() {
     
-    // let start = Instant::now();
+    let start = Instant::now();
+    test_huge_graph();
+    
+    let duration = start.elapsed();
+    
+    println!("\nTotal time = {:?}", duration);
     // solve(&mut io::stdin(), &mut io::stdout());
-    // test_huge_graph();
-    
-    // let duration = start.elapsed();
-    
-    // println!("\nTotal time = {:?}", duration);
-    solve(&mut io::stdin(), &mut io::stdout());
 }
 
-// fn test_huge_graph() {
-//     let n = 10000;
-//     let m = 15000;
-//     let k = 20;
-//     let mut graph: BitsetGraph = BitsetGraph::new(n);
-//     let mut output = io::stdout();
-//     let mut rng = rand::thread_rng();
-//     let mut y: f64 = rng.gen();
+fn test_huge_graph() {
+    let n = 100000;
+    let m = 100000;
+    let k = 230;
+    let mut graph: BitsetGraph = BitsetGraph::new(n);
+    let mut output = io::stdout();
+    let mut rng = rand::thread_rng();
+    let mut y: f64 = rng.gen();
 
-//     for i in 0 .. m {
-//         y= rng.gen();
-//         let v1 = (y * n as f64) as usize;
-//         y = rng.gen();
-//         let v2 = (y * n as f64) as usize;
+    for i in 0 .. m {
+        y= rng.gen();
+        let v1 = (y * n as f64) as usize;
+        y = rng.gen();
+        let v2 = (y * n as f64) as usize;
 
-//         graph.add_edge(v1, v2);
-//     }
+        graph.add_edge(v1, v2);
+    }
 
-//     remove_vertices_min_nei(&mut graph, k - 1);
+    remove_vertices_min_nei(&mut graph, k - 1);
 
-//     if graph.vertices.len() == 0 {
-//         writeln!(output, "-1").expect("correct output");
-//         return;
-//     }
+    if graph.vertices.len() == 0 {
+        writeln!(output, "-1").expect("correct output");
+        return;
+    }
 
 //     let mut clique: Option<BTreeSet<usize>> = None;
 //     let mut result_set: Option<BTreeSet<usize>> = None;
@@ -698,7 +698,7 @@ fn main() {
 //             }
 //         }
 //     }
-// }
+}
 
 #[cfg(test)]
 mod tests {
