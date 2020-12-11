@@ -1,8 +1,14 @@
+// extern crate rand;
 use std::collections::{BTreeSet, HashSet};
 use std::io::prelude::*;
 use std::io::{self, BufReader};
-use std::collections::hash_set::Iter;
-use std::cmp;
+// use std::collections::hash_set::Iter;
+// use std::cmp;
+// use std::time::{Duration, Instant};
+// use rand::Rng;
+// use rand::prelude::*;
+
+
 
 #[allow(dead_code)]
 const ADDRESS_BITS_PER_WORD: u16 = 6;
@@ -333,6 +339,10 @@ impl SparseBitset {
                     from_idx -= (from_word << ADDRESS_BITS_PER_WORD);
                     word = self.words[wm.reference as usize] & (WORD_MASK << from_idx);
                 } else {
+                    if (map_idx == from_map) {
+                        map_idx += 1;
+                        continue;
+                    }
                     word = self.words[wm.reference as usize];
                 }
             }
@@ -437,10 +447,12 @@ impl BitsetGraph {
         cache.clear();
         for nei in &self.vec_matrix[v] {
             cache.push(nei);
+            // println!("nei {}", nei);
         }
 
         for nei in cache {
             self.vec_matrix[*nei].reset(v);
+            // println!("reset {}", nei);
         }
         self.vertices.remove(&v);
     }
@@ -459,16 +471,24 @@ fn remove_vertices_min_nei(graph: &mut BitsetGraph, min_nei: usize) {
         let next_v = vertices_queue.iter().next().cloned();
         match next_v {
             Some(next_idx) => {
+                // println!("check {}", next_idx);
                 vertices_queue.remove(&next_idx);
                 let next_vertex = &graph.vec_matrix[next_idx];
-                if next_vertex.num_bits == 0 {
-                    continue;
-                }
-                if next_vertex.num_bits - 1 < min_nei {
+                // if next_vertex.num_bits == 0 {
+                //     continue;
+                // }
+                // println!("next_vertex.num_bits {}", next_vertex.num_bits);
+                if next_vertex.num_bits < min_nei + 1 {
                     for nei in next_vertex {
+                        if nei == next_idx {
+                            continue;
+                        }
                         vertices_queue.insert(nei);
+                        // println!("insert {}", nei);
                     }
+                    // println!("remove {}", next_idx);
                     graph.remove_vertex(next_idx, &mut vec_cache);
+                    // println!("remove done {}", next_idx);
                 }
             },
             None => break
@@ -616,8 +636,69 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
 }
 
 fn main() {
+    
+    // let start = Instant::now();
+    // solve(&mut io::stdin(), &mut io::stdout());
+    // test_huge_graph();
+    
+    // let duration = start.elapsed();
+    
+    // println!("\nTotal time = {:?}", duration);
     solve(&mut io::stdin(), &mut io::stdout());
 }
+
+// fn test_huge_graph() {
+//     let n = 10000;
+//     let m = 15000;
+//     let k = 20;
+//     let mut graph: BitsetGraph = BitsetGraph::new(n);
+//     let mut output = io::stdout();
+//     let mut rng = rand::thread_rng();
+//     let mut y: f64 = rng.gen();
+
+//     for i in 0 .. m {
+//         y= rng.gen();
+//         let v1 = (y * n as f64) as usize;
+//         y = rng.gen();
+//         let v2 = (y * n as f64) as usize;
+
+//         graph.add_edge(v1, v2);
+//     }
+
+//     remove_vertices_min_nei(&mut graph, k - 1);
+
+//     if graph.vertices.len() == 0 {
+//         writeln!(output, "-1").expect("correct output");
+//         return;
+//     }
+
+//     let mut clique: Option<BTreeSet<usize>> = None;
+//     let mut result_set: Option<BTreeSet<usize>> = None;
+
+//     find_result(&mut graph, &mut clique, &mut result_set, k);
+
+//     match result_set {
+//         Some(vertices) => {
+//             writeln!(output, "1 {}", vertices.len()).expect("correct output");
+//             let collected_vertices: Vec<String> =  vertices.iter().map(|&v| (v + 1).to_string()).collect();
+// //              // collected_vertices.sort();
+//             // writeln!(output, "{}", collected_vertices.join(" ")).expect("correct output");
+//         },
+//         None => {
+//             match clique {
+//                 Some(vertices) => {
+//                     writeln!(output, "2").expect("correct output");
+//                     let collected_vertices: Vec<String> =  vertices.iter().map(|&v| (v + 1).to_string()).collect();
+//                     // collected_vertices.sort();
+//                     // writeln!(output, "{}", collected_vertices.join(" ")).expect("correct output");
+//                 },
+//                 None => {
+//                     writeln!(output, "-1").expect("correct output");
+//                 }
+//             }
+//         }
+//     }
+// }
 
 #[cfg(test)]
 mod tests {

@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Aleksandr Savelev <aleksandr_savelev@epam.com>"]
 
 [dependencies]
+rand = "*"
 
 [[bin]]
 name = "rust"
