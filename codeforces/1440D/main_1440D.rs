@@ -1,8 +1,8 @@
-use std::collections::{BTreeSet, HashSet};
+use std::collections::BTreeSet;
 use std::io::prelude::*;
 use std::io::{self, BufReader};
 // use std::collections::hash_set::Iter;
-// use std::cmp;
+use std::cmp;
 
 
 
@@ -13,6 +13,264 @@ const ADDRESS_BITS_PER_WORD: u16 = 6;
 const BITS_PER_WORD: u16 = 1 << ADDRESS_BITS_PER_WORD;
 #[allow(dead_code)]
 const WORD_MASK: u64 = 0xFFFFFFFFFFFFFFFF;
+
+
+
+
+#[allow(dead_code)]
+struct DBitset {
+    words_in_use: usize,
+    words: Vec<u64>,
+}
+#[allow(dead_code,unused_parens)]
+impl DBitset {
+    fn word_index(nbits: usize) -> usize {
+        nbits >> ADDRESS_BITS_PER_WORD
+    }
+    fn new(nbits: usize) -> DBitset {
+        let l = DBitset::word_index(nbits - 1) + 1;
+        let mut w = Vec::with_capacity(l);
+        w.resize(l, 0);
+        DBitset {
+            words_in_use: 0,
+            words: w,
+        }
+    }
+    fn is_empty(&self) -> bool {
+        self.words_in_use == 0
+    }
+    fn set(&mut self, bit_idx: usize) {
+        let wordindex = DBitset::word_index(bit_idx);
+        let mut bit = bit_idx;
+        bit -= (wordindex << ADDRESS_BITS_PER_WORD);
+        self.expand_to(wordindex);
+        self.words[wordindex] |= (1u64 << bit);
+    }
+    fn setc(&mut self, bit_idx: usize) -> bool {
+        let wordindex = DBitset::word_index(bit_idx);
+        let mut bit = bit_idx;
+        bit -= (wordindex << ADDRESS_BITS_PER_WORD);
+        self.expand_to(wordindex);
+        let w = self.words[wordindex];
+        self.words[wordindex] |= (1u64 << bit);
+        return w != self.words[wordindex];
+    }
+
+    fn reset(&mut self, bit_idx: usize) {
+        let wordindex = DBitset::word_index(bit_idx);
+        if wordindex >= self.words_in_use {
+            return;
+        }
+        let mut bit = bit_idx;
+        bit -= (wordindex << ADDRESS_BITS_PER_WORD);
+
+        self.words[wordindex] &= !(1u64 << bit);
+        self.recalculate_words_in_use();
+    }
+
+    fn resetc(&mut self, bit_idx: usize) ->bool {
+        let wordindex = DBitset::word_index(bit_idx);
+        if wordindex >= self.words_in_use {
+            return false;
+        }
+        let mut bit = bit_idx;
+        bit -= (wordindex << ADDRESS_BITS_PER_WORD);
+        let w = self.words[wordindex];
+        self.words[wordindex] &= !(1u64 << bit);
+        self.recalculate_words_in_use();
+        return w != self.words[wordindex];
+    }
+
+    fn get(&self, bit_idx: usize) -> bool {
+        let word_index = DBitset::word_index(bit_idx);
+        let mut bit = bit_idx;
+        bit -= word_index << ADDRESS_BITS_PER_WORD;
+        (word_index < self.words_in_use) && ((self.words[word_index] & (1u64 << bit)) != 0)
+    }
+    fn expand_to(&mut self, word_idx: usize) {
+        let words_required = word_idx + 1;
+        if self.words_in_use < words_required {
+            self.words_in_use = words_required;
+        }
+        if self.words.len() < words_required {
+            self.words.resize(words_required, 0);
+        }
+    }
+
+    fn recalculate_words_in_use(&mut self) {
+        self.words_in_use = 0;
+        for i in (0..self.words.len()).rev() {
+            if self.words[i] != 0 {
+                self.words_in_use = i + 1;
+                break;
+            }
+        }
+    }
+
+    fn and_with(&mut self, set: &DBitset) {
+        let mut word_len = self.words_in_use;
+        if self.words_in_use > set.words_in_use {
+            word_len = set.words_in_use;
+            for i in word_len..self.words_in_use {
+                self.words[i] = 0;
+            }
+        }
+
+        for i in 0..word_len {
+            self.words[i] &= set.words[i];
+        }
+        self.recalculate_words_in_use();
+    }
+    fn and_not_with(&mut self, set: &DBitset) {
+        let w_min = cmp::min(self.words_in_use, set.words_in_use);
+        for i in 0..w_min {
+            self.words[i] &= !set.words[i];
+        }
+        self.recalculate_words_in_use();
+    }
+    fn is_subset_of(&self, set: &DBitset) -> bool {
+        if self.words_in_use > set.words_in_use {
+            return false;
+        }
+        for i in 0..self.words_in_use {
+            if (self.words[i] & (!set.words[i])) != 0 {
+                return false;
+            }
+        }
+        return true;
+    }
+    fn or_with(&mut self, set: &DBitset) -> bool {
+        let mut changed = false;
+        if self.words_in_use < set.words_in_use {
+            self.words_in_use = set.words_in_use;
+        }
+        if self.words.len() < self.words_in_use {
+            self.words.resize(self.words_in_use, 0);
+        }
+        let w_min = cmp::min(self.words_in_use, set.words_in_use);
+        for i in 0..w_min {
+            let w = self.words[i];
+            self.words[i] |= set.words[i];
+            if w != self.words[i] {
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    fn least_significant_bit_position(m: u64) -> Option<usize> {
+        let mut n = m;
+        if n == 0 {
+            return None;
+        }
+
+        let mut pos = 63usize;
+        if n & 0x00000000FFFFFFFFu64 != 0 {
+            pos -= 32;
+        } else {
+            n >>= 32;
+        }
+        if n & 0x000000000000FFFFu64 != 0 {
+            pos -= 16;
+        } else {
+            n >>= 16;
+        }
+        if n & 0x00000000000000FFu64 != 0 {
+            pos -= 8;
+        } else {
+            n >>= 8;
+        }
+        if n & 0x000000000000000Fu64 != 0 {
+            pos -= 4;
+        } else {
+            n >>= 4;
+        }
+        if n & 0x0000000000000003u64 != 0 {
+            pos -= 2;
+        } else {
+            n >>= 2;
+        }
+        if n & 0x0000000000000001u64 != 0 {
+            pos -= 1;
+        }
+        return Some(pos);
+    }
+
+    fn next_set_bit(&self, from_index: usize) -> Option<usize> {
+        let mut from_idx = from_index;
+        let mut u = DBitset::word_index(from_idx);
+        if u >= self.words_in_use {
+            return None;
+        }
+        from_idx -= (u << ADDRESS_BITS_PER_WORD);
+        let mut word = self.words[u] & (WORD_MASK << from_idx);
+        while word == 0 {
+            u += 1;
+            if u >= self.words_in_use {
+                return None;
+            }
+            word = self.words[u];
+        }
+        let bit = u << ADDRESS_BITS_PER_WORD;
+        let lbit = DBitset::least_significant_bit_position(word);
+
+        if bit == 0 && lbit.is_none() {
+            return None;
+        }
+
+        return Some(bit + lbit.unwrap());
+    }
+
+    // let mut bit = cell.next_set_bit(0);
+    // while bit.is_some() {
+    //     let b = bit.unwrap();
+    //     bit = cell.next_set_bit(b + 1);
+    // }
+    //
+}
+
+
+impl<'a> IntoIterator for &'a DBitset {
+    type Item = usize;
+    type IntoIter = BitsetIterator<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        BitsetIterator {
+            bitset: self,
+            index: None,
+        }
+    }
+}
+
+struct BitsetIterator<'a> {
+    bitset: &'a DBitset,
+    index: Option<usize>,
+}
+
+impl<'a> Iterator for BitsetIterator<'a> {
+    type Item = usize;
+    fn next(&mut self) -> Option<usize> {
+        let start_idx = match self.index {
+            Some(idx) => {
+                idx + 1
+            }, 
+            None => {
+                0
+            }
+        };
+        match self.bitset.next_set_bit(start_idx) {
+            Some(bit) => {
+                self.index.replace(bit);
+                return Some(bit);
+            },
+            None => {
+                return None;
+            }
+        }
+    }
+}
+
+
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -415,23 +673,25 @@ impl<'a> Iterator for SBitsetIterator<'a> {
 
 struct BitsetGraph {
     vec_matrix: Vec<SparseBitset>,
-    vertices: BTreeSet<usize>,
+    vertices: DBitset,
+    num_vertices: usize,
 }
 
 impl BitsetGraph {
     fn new(num_vertices: usize) -> BitsetGraph {
         let mut vec_matrix = Vec::with_capacity(num_vertices);
-        let mut vertices = BTreeSet::new();
+        let mut vertices = DBitset::new(num_vertices);
         for v in 0..num_vertices {
             let mut new_v = SparseBitset::new(num_vertices);
             new_v.set(v);
             vec_matrix.push(new_v);
-            vertices.insert(v);
+            vertices.set(v);
         }
 
         return BitsetGraph {
             vec_matrix: vec_matrix,
             vertices: vertices,
+            num_vertices: num_vertices,
         }
     }
 
@@ -451,25 +711,65 @@ impl BitsetGraph {
             self.vec_matrix[*nei].reset(v);
             // println!("reset {}", nei);
         }
-        self.vertices.remove(&v);
+        if self.vertices.resetc(v) {
+            self.num_vertices -= 1;
+        }
     }
 
 }
 
+// fn remove_vertices_min_nei(graph: &mut BitsetGraph, min_nei: usize) {
+//     let mut vertices_queue: BTreeSet<usize> = BTreeSet::new();
+//     let mut vec_cache: Vec<usize> = Vec::new();
+
+//     for i in &graph.vertices {
+//         vertices_queue.insert(*i);
+//     }
+
+//     loop {
+//         let next_v = vertices_queue.iter().next().cloned();
+//         match next_v {
+//             Some(next_idx) => {
+//                 // println!("check {}", next_idx);
+//                 vertices_queue.remove(&next_idx);
+//                 let next_vertex = &graph.vec_matrix[next_idx];
+//                 // if next_vertex.num_bits == 0 {
+//                 //     continue;
+//                 // }
+//                 // println!("next_vertex.num_bits {}", next_vertex.num_bits);
+//                 if next_vertex.num_bits < min_nei + 1 {
+//                     for nei in next_vertex {
+//                         if nei == next_idx {
+//                             continue;
+//                         }
+//                         vertices_queue.insert(nei);
+//                         // println!("insert {}", nei);
+//                     }
+//                     // println!("remove {}", next_idx);
+//                     graph.remove_vertex(next_idx, &mut vec_cache);
+//                     // println!("remove done {}", next_idx);
+//                 }
+//             },
+//             None => break
+//         }
+//     }
+// }
+
 fn remove_vertices_min_nei(graph: &mut BitsetGraph, min_nei: usize) {
-    let mut vertices_queue: HashSet<usize> = HashSet::new();
+    // let mut vertices_queue: BTreeSet<usize> = BTreeSet::new();
+    let mut vertices_queue: DBitset = DBitset::new(graph.num_vertices);
     let mut vec_cache: Vec<usize> = Vec::new();
 
     for i in &graph.vertices {
-        vertices_queue.insert(*i);
+        vertices_queue.set(i);
     }
 
     loop {
-        let next_v = vertices_queue.iter().next().cloned();
+        let next_v = vertices_queue.next_set_bit(0);
         match next_v {
             Some(next_idx) => {
                 // println!("check {}", next_idx);
-                vertices_queue.remove(&next_idx);
+                vertices_queue.reset(next_idx);
                 let next_vertex = &graph.vec_matrix[next_idx];
                 // if next_vertex.num_bits == 0 {
                 //     continue;
@@ -480,7 +780,7 @@ fn remove_vertices_min_nei(graph: &mut BitsetGraph, min_nei: usize) {
                         if nei == next_idx {
                             continue;
                         }
-                        vertices_queue.insert(nei);
+                        vertices_queue.set(nei);
                         // println!("insert {}", nei);
                     }
                     // println!("remove {}", next_idx);
@@ -503,12 +803,12 @@ fn find_result(graph: &mut BitsetGraph,
     let mut vertices_to_update: Vec<usize> = Vec::new();
 
     loop {
-        if graph.vertices.len() < k {
+        if graph.num_vertices < k {
             break;
         }
         vertex_to_remove.clear();
 
-        for &v in &graph.vertices {
+        for v in &graph.vertices {
             let vert_len = graph.vec_matrix[v].num_bits - 1;
             if vert_len < k - 1 {
                 vertex_to_remove.push(v);
@@ -546,8 +846,12 @@ fn find_result(graph: &mut BitsetGraph,
         // println!("vertex_to_remove {:?}", vertex_to_remove);
         
         if vertex_to_remove.len() == 0 {
-            if graph.vertices.len() > k {
-                result_set.replace(graph.vertices.clone());
+            if graph.num_vertices > k {
+                let mut res: BTreeSet<usize> = BTreeSet::new();
+                for nei in &graph.vertices {
+                    res.insert(nei);
+                }
+                result_set.replace(res);
             }
             break;
         }
@@ -598,7 +902,7 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
 
         remove_vertices_min_nei(&mut graph, k - 1);
 
-        if graph.vertices.len() == 0 {
+        if graph.num_vertices == 0 {
             writeln!(output, "-1").expect("correct output");
             continue;
         }
@@ -631,46 +935,46 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
         }
     }
 }
-extern crate rand;
-use std::time::{Duration, Instant};
-use rand::Rng;
-use rand::prelude::*;
+// extern crate rand;
+// use std::time::{Duration, Instant};
+// use rand::Rng;
+// use rand::prelude::*;
 
 fn main() {
     
-    let start = Instant::now();
-    test_huge_graph();
+    // let start = Instant::now();
+    // test_huge_graph();
     
-    let duration = start.elapsed();
+    // let duration = start.elapsed();
     
-    println!("\nTotal time = {:?}", duration);
-    // solve(&mut io::stdin(), &mut io::stdout());
+    // println!("\nTotal time = {:?}", duration);
+    solve(&mut io::stdin(), &mut io::stdout());
 }
 
-fn test_huge_graph() {
-    let n = 100000;
-    let m = 100000;
-    let k = 230;
-    let mut graph: BitsetGraph = BitsetGraph::new(n);
-    let mut output = io::stdout();
-    let mut rng = rand::thread_rng();
-    let mut y: f64 = rng.gen();
+// fn test_huge_graph() {
+//     let n = 10000;
+//     let m = 10000;
+//     let k = 23;
+//     let mut graph: BitsetGraph = BitsetGraph::new(n);
+//     let mut output = io::stdout();
+//     let mut rng = rand::thread_rng();
+//     let mut y: f64 = rng.gen();
 
-    for i in 0 .. m {
-        y= rng.gen();
-        let v1 = (y * n as f64) as usize;
-        y = rng.gen();
-        let v2 = (y * n as f64) as usize;
+//     for i in 0 .. m {
+//         y= rng.gen();
+//         let v1 = (y * n as f64) as usize;
+//         y = rng.gen();
+//         let v2 = (y * n as f64) as usize;
 
-        graph.add_edge(v1, v2);
-    }
+//         graph.add_edge(v1, v2);
+//     }
 
-    remove_vertices_min_nei(&mut graph, k - 1);
+//     remove_vertices_min_nei(&mut graph, k - 1);
 
-    if graph.vertices.len() == 0 {
-        writeln!(output, "-1").expect("correct output");
-        return;
-    }
+//     if graph.num_vertices == 0 {
+//         writeln!(output, "-1").expect("correct output");
+//         return;
+//     }
 
 //     let mut clique: Option<BTreeSet<usize>> = None;
 //     let mut result_set: Option<BTreeSet<usize>> = None;
@@ -698,7 +1002,7 @@ fn test_huge_graph() {
 //             }
 //         }
 //     }
-}
+// }
 
 #[cfg(test)]
 mod tests {
