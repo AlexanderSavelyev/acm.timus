@@ -57,6 +57,19 @@ impl DBitset {
         self.recalculate_words_in_use();
     }
 
+    fn resetc(&mut self, bit_idx: usize) ->bool {
+        let wordindex = DBitset::word_index(bit_idx);
+        if wordindex >= self.words_in_use {
+            return false;
+        }
+        let mut bit = bit_idx;
+        bit -= (wordindex << ADDRESS_BITS_PER_WORD);
+        let w = self.words[wordindex];
+        self.words[wordindex] &= !(1u64 << bit);
+        self.recalculate_words_in_use();
+        return w != self.words[wordindex];
+    }
+
     fn get(&self, bit_idx: usize) -> bool {
         let word_index = DBitset::word_index(bit_idx);
         let mut bit = bit_idx;
