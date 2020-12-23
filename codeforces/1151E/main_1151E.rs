@@ -29,23 +29,24 @@ impl Vertex {
 #[derive(Clone)]
 struct Tree {
     vertices: Vec<Option<Vertex>>,
-    vert_map: BTreeMap<usize, Vec<usize>>,
     num_components: usize,
+    num_vertices: usize,
 }
 
 impl Tree {
     fn new() -> Tree {
         Tree {
             vertices: Vec::new(),
-            vert_map: BTreeMap:: new(),
             num_components: 1,
+            num_vertices : 0,
         }
     }
 
     fn add_vertex(&mut self, a: usize) -> usize {
         let v_idx = self.vertices.len();
         self.vertices.push(Some(Vertex::new()));
-        self.vert_map.entry(a).or_insert(Vec::new()).push(v_idx);
+        self.num_vertices += 1;
+        
         return v_idx;
     }
 
@@ -68,9 +69,8 @@ impl Tree {
 
     }
 
-    fn remove_vertex_by_a(&mut self, a: usize) {
+    fn remove_vertex_by_a(&mut self, a: usize, vert_map: &BTreeMap<usize, Vec<usize>>) {
         let mut vertices_to_update: Vec<usize> = Vec::new(); 
-        let vert_map = &self.vert_map;
         let vertices = &mut self.vertices;
         match vert_map.get(&a) {
             Some(a_vert) => {
@@ -97,7 +97,17 @@ impl Tree {
             }, None => {
             }
         }
-        self.vert_map.remove(&a);
+        self.num_vertices -= 1;
+        // self.vert_map.remove(&a);
+    }
+
+    fn copy(&mut self, other: &Tree) {
+        self.num_components = other.num_components;
+        self.num_vertices = other.num_vertices;
+
+        for i in 0..other.vertices.len() {
+            self.vertices[i] = other.vertices[i].clone();
+        }
     }
 
 }
@@ -113,6 +123,8 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
 
     let mut init_tree: Tree = Tree::new();
     let mut prev_vertex: Option<(usize, usize)> = None;
+    let mut vert_map: BTreeMap<usize, Vec<usize>> = BTreeMap::new();
+
     for _ in 0..n {
         let a: usize = s.next().unwrap().trim().parse().unwrap();
         
@@ -120,12 +132,14 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
             Some((prev_v, prev_a)) => {
                 if prev_a != a {
                     let v_idx = init_tree.add_vertex(a);
+                    vert_map.entry(a).or_insert(Vec::new()).push(v_idx);
                     init_tree.add_edge(prev_v, v_idx);
                     prev_vertex.replace((v_idx, a));
                 }
             },
             None =>{
                 let v_idx = init_tree.add_vertex(a);
+                vert_map.entry(a).or_insert(Vec::new()).push(v_idx);
                 prev_vertex.replace((v_idx, a));
             }
         }
@@ -142,27 +156,29 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
     // }
     // println!("num_diag_components {}", num_diag_components);
     let mut prev_last_idx =  n + 1;
+    let mut back_iter = vert_map.keys();
+    let mut tree = init_tree.clone();
     loop {
-        let last = init_tree.vert_map.keys().next_back().cloned();
+        let last = back_iter.next_back();
         match last {
             Some(last_v) => {
-                let mut v_iter = init_tree.vert_map.keys();
-                let mut tree = init_tree.clone();
+                let mut v_iter = vert_map.keys();
+                tree.copy(&init_tree);
                 let mut prev_first_idx = 0_usize;
                 num_last_components = 0_usize;
                 loop {
                     let first = v_iter.next();
                     match first {
                         Some(first_v) => {
-                            // println!("check {} {}", *first_v, last_v);
+                            // println!("check {} {}", *first_v, *last_v);
                             // println!("tree.num_components {}", tree.num_components);
                             num_components += tree.num_components * (*first_v - prev_first_idx);
                             num_last_components += tree.num_components * (*first_v - prev_first_idx);
-                            if *first_v == last_v {
+                            if *first_v == *last_v {
                                 // println!("break");
                                 break;
                             }
-                            tree.remove_vertex_by_a(*first_v);
+                            tree.remove_vertex_by_a(*first_v, &vert_map);
                             prev_first_idx = *first_v;
                         },
                         None => {
@@ -172,11 +188,14 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
                 }
                 // println!("calculate last {}", num_last_components * (prev_last_idx - last_v - 1));
                 num_components += num_last_components * (prev_last_idx - last_v - 1);
-                init_tree.remove_vertex_by_a(last_v);
-                prev_last_idx = last_v;
-                if init_tree.vert_map.len() == 0 {
+                init_tree.remove_vertex_by_a(*last_v, &vert_map);
+                prev_last_idx = *last_v;
+                if init_tree.num_vertices == 0 {
                     break;
                 }
+                // if init_tree.vert_map.len() == 0 {
+                //     break;
+                // }
             }, None => {
                 break;
             }
