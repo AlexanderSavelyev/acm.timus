@@ -1,11 +1,12 @@
 use std::io::{self, BufReader};
 use std::io::prelude::*;
+use std::collections::LinkedList;
 
 #[derive(Debug)]
 struct Node {
     range_left: usize,
     range_right: usize,
-    range_max: usize,
+    range_min: usize,
     range_sum: usize,
     nei1: usize,
     nei2: usize,
@@ -21,11 +22,15 @@ impl Node {
         Node {
             range_left: 0,
             range_right: 0,
-            range_max: 0,
+            range_min: std::usize::MAX,
             range_sum: 0,
             nei1: 0,
             nei2: 0, 
         }
+    }
+
+    fn range_within(&self, elem: usize) -> bool {
+        return elem >= self.range_left && elem <= self.range_right;
     }
 }
 
@@ -41,11 +46,12 @@ impl SegmentTree {
         let mut stack: Vec<usize> = Vec::new();
         self.nodes_pool.push(Node::new());
         for &v in values {
-            stack.push(self.nodes_pool.len());
+            let next_idx = self.nodes_pool.len();
+            stack.push(next_idx);
             self.nodes_pool.push(Node{
-                range_left: v,
-                range_right: v,
-                range_max: v,
+                range_left: next_idx,
+                range_right: next_idx,
+                range_min: v,
                 range_sum: v,
                 nei1: 0,
                 nei2: 0, 
@@ -62,28 +68,31 @@ impl SegmentTree {
                 if next_node.nei1 == 0 {
                     next_node.nei1 = nei;
                     next_node.range_left = nei_node.range_left;
-                    if nei_node.range_max > next_node.range_max {
-                        next_node.range_max = nei_node.range_max;
+                    next_node.range_right = nei_node.range_right;
+                    if nei_node.range_min < next_node.range_min {
+                        next_node.range_min = nei_node.range_min;
                     }
                     next_node.range_sum = next_node.range_sum + nei_node.range_sum;
                 } else if next_node.nei2 == 0 {
                     next_node.nei2 = nei;
                     next_node.range_right = nei_node.range_right;
-                    if nei_node.range_max > next_node.range_max {
-                        next_node.range_max = nei_node.range_max;
+                    if nei_node.range_min < next_node.range_min {
+                        next_node.range_min = nei_node.range_min;
                     }
                     next_node.range_sum = next_node.range_sum + nei_node.range_sum;
-                    println!("next_node {:?}", next_node);
+                    println!("next_node {} {:?}", self.nodes_pool.len(), next_node);
                     stack_next.push(self.nodes_pool.len());
                     self.nodes_pool.push(next_node);
                     next_node = Node::new();
                 }
             }
             if next_node.nei1 > 0 {
-                stack_next.push(self.nodes_pool.len());
-                self.nodes_pool.push(next_node);
+                // println!("next_node {:?}", next_node);
+                stack_next.push(next_node.nei1);
+                // self.nodes_pool.push(next_node);
                 next_node = Node::new();
             }
+            // println!("stack_next.len() {:?}", stack_next.len());
             if stack_next.len() == 1 {
                 self.root_node = stack_next[0];
                 break;
@@ -97,6 +106,10 @@ impl SegmentTree {
             // }
         }
         
+    }
+
+    fn get_node(&self, idx: usize) -> &Node {
+        return &self.nodes_pool[idx];
     }
 }
 fn solve(input: &mut dyn Read, output: &mut dyn Write) {
@@ -124,7 +137,7 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
     let mut segment_tree = SegmentTree::new();
 
     segment_tree.build_from(&prices);
-
+    let mut queue: LinkedList<usize> = LinkedList::new();
     for _ in 0..q {
         input.clear();
         reader.read_line(&mut input).unwrap();
@@ -140,7 +153,41 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
         if t == 1 {
 
         } else {
-            
+            queue.clear();
+            queue.push_back(segment_tree.root_node);
+            let mut money = y;
+            let mut collected_shops = 0_usize;
+            loop {
+                println!("queue {:?}", queue);
+                match queue.pop_back() {
+                    Some(next_node) => {
+                        let node = segment_tree.get_node(next_node);
+                        if x <= node.range_right && node.range_min <= money {
+                            println!("range_sum {} money {}", node.range_sum, money);
+                            if x <= node.range_left && node.range_sum <= money {
+                                money -= node.range_sum;
+                                collected_shops += node.range_right - node.range_left + 1;
+                            } else {
+                                if node.nei2 > 0 {
+                                    queue.push_back(node.nei2);
+                                }
+                                if node.nei1 > 0 {
+                                    queue.push_back(node.nei1);
+                                }
+                            }
+                        }
+                        if money == 0 {
+                            break;
+                        }
+                    }, 
+                    None => {
+                        break;
+                    }
+                }
+            }
+            println!("collected_shops {}", collected_shops);
+            writeln!(output, "{}", collected_shops).expect("correct output");
+
         }
 
     }
@@ -175,8 +222,8 @@ mod tests {
         solve(&mut test_r, &mut buf);
 
         let res = String::from_utf8(buf).expect("valid string");
-        assert_eq!(res,
-                  "1
-");
+//         assert_eq!(res,
+//                   "1
+// ");
     }
 }
