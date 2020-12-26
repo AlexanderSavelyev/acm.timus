@@ -8,6 +8,7 @@ struct Node {
     range_right: usize,
     range_min: usize,
     range_sum: usize,
+    parent: usize,
     nei1: usize,
     nei2: usize,
 }
@@ -24,14 +25,12 @@ impl Node {
             range_right: 0,
             range_min: std::usize::MAX,
             range_sum: 0,
+            parent: 0,
             nei1: 0,
             nei2: 0, 
         }
     }
 
-    fn range_within(&self, elem: usize) -> bool {
-        return elem >= self.range_left && elem <= self.range_right;
-    }
 }
 
 impl SegmentTree {
@@ -53,6 +52,7 @@ impl SegmentTree {
                 range_right: next_idx,
                 range_min: v,
                 range_sum: v,
+                parent: 0,
                 nei1: 0,
                 nei2: 0, 
             });
@@ -80,8 +80,9 @@ impl SegmentTree {
                         next_node.range_min = nei_node.range_min;
                     }
                     next_node.range_sum = next_node.range_sum + nei_node.range_sum;
-                    println!("next_node {} {:?}", self.nodes_pool.len(), next_node);
-                    stack_next.push(self.nodes_pool.len());
+                    // println!("next_node {} {:?}", self.nodes_pool.len(), next_node);
+                    let parent_idx = self.nodes_pool.len();
+                    stack_next.push(parent_idx);
                     self.nodes_pool.push(next_node);
                     next_node = Node::new();
                 }
@@ -105,11 +106,27 @@ impl SegmentTree {
             //     break;
             // }
         }
+        let nodes_len = self.nodes_pool.len();
+
+        for i in 1 .. nodes_len {
+            let nei1 = self.nodes_pool[i].nei1;
+            if nei1 > 0 {
+                self.nodes_pool[nei1].parent = i;
+            }
+            let nei2 = self.nodes_pool[i].nei2;
+            if nei2 > 0 {
+                self.nodes_pool[nei2].parent = i;
+            }
+        }
         
     }
 
     fn get_node(&self, idx: usize) -> &Node {
         return &self.nodes_pool[idx];
+    }
+
+    fn get_node_mut(&mut self, idx: usize) -> &mut Node {
+        return &mut self.nodes_pool[idx];
     }
 }
 fn solve(input: &mut dyn Read, output: &mut dyn Write) {
@@ -132,7 +149,7 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
         prices.push(a.parse().unwrap());
     }
 
-    println!("{:?}", prices);
+    // println!("{:?}", prices);
 
     let mut segment_tree = SegmentTree::new();
 
@@ -148,22 +165,99 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
         let x: usize = s1.next().unwrap().trim().parse().unwrap();
         let y: usize = s1.next().unwrap().trim().parse().unwrap();
 
-        println!("{} {} {}", t, x, y);
+        // println!("{} {} {}", t, x, y);
 
         if t == 1 {
+            queue.clear();
+            queue.push_back(segment_tree.root_node);
+            let mut start_from = 0_usize;
+            loop {
+                match queue.pop_back() {
+                    Some(next_node) => {
+                        let node = segment_tree.get_node(next_node);
+                        if node.range_min < y && x >= node.range_left {
+                            if node.nei1 == 0 && node.nei2 == 0 {
+                                start_from = next_node;
+                                break;
+                            }
+                            if node.nei2 > 0 {
+                                queue.push_back(node.nei2);
+                            }
+                            if node.nei1 > 0 {
+                                queue.push_back(node.nei1);
+                            }
+                        }
+                    },None => {
+                        break;
+                    }
+                }
+            }
+            if start_from > 0 {
+                queue.clear();
+                loop {
+                    let node = segment_tree.get_node_mut(start_from);
+                    if node.nei1 > 0 || node.nei2 > 0 {
+                        break;
+                    }
+                    if x < node.range_left {
+                        break;
+                    }
+                    if node.parent > 0 {
+                        queue.push_back(node.parent);
+                    }
 
+                    node.range_min = y;
+                    node.range_sum = y;
+                    
+                    start_from += 1;
+                }
+
+                loop {
+                    match queue.pop_back() {
+                        Some(next_node) => {
+                            let node = segment_tree.get_node(next_node);
+                            let mut range_sum = 0_usize;
+                            let mut range_min = std::usize::MAX;
+                            if node.nei1 > 0 {
+                                let nei_node = segment_tree.get_node(node.nei1);
+                                if nei_node.range_min < range_min {
+                                    range_min = nei_node.range_min;
+                                }
+                                range_sum += nei_node.range_sum;
+                            }
+                            if node.nei2 > 0 {
+                                let nei_node = segment_tree.get_node(node.nei2);
+                                if nei_node.range_min < range_min {
+                                    range_min = nei_node.range_min;
+                                }
+                                range_sum += nei_node.range_sum;
+                            }
+                            if node.parent > 0 {
+                                queue.push_front(node.parent);
+                            }
+
+                            let node_mut = segment_tree.get_node_mut(next_node);
+                            node_mut.range_min = range_min;
+                            node_mut.range_sum = range_sum;
+
+                        }, None => {
+                            break;
+                        }
+                    }
+                }
+            }
         } else {
             queue.clear();
             queue.push_back(segment_tree.root_node);
             let mut money = y;
             let mut collected_shops = 0_usize;
             loop {
-                println!("queue {:?}", queue);
+                // println!("queue {:?}", queue);
                 match queue.pop_back() {
                     Some(next_node) => {
                         let node = segment_tree.get_node(next_node);
                         if x <= node.range_right && node.range_min <= money {
-                            println!("range_sum {} money {}", node.range_sum, money);
+                            // println!("range_sum {} money {}", node.range_sum, money);
                             if x <= node.range_left && node.range_sum <= money {
                                 money -= node.range_sum;
                                 collected_shops += node.range_right - node.range_left + 1;
@@ -185,16 +279,14 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
                     }
                 }
             }
-            println!("collected_shops {}", collected_shops);
+            // println!("collected_shops {}", collected_shops);
             writeln!(output, "{}", collected_shops).expect("correct output");
 
         }
 
     }
-
     // println!("{}", n);
-    writeln!(output, "1").expect("correct output");
-
+    // writeln!(output, "1").expect("correct output");
 }
 
 fn main() {
@@ -222,8 +314,11 @@ mod tests {
         solve(&mut test_r, &mut buf);
 
         let res = String::from_utf8(buf).expect("valid string");
-//         assert_eq!(res,
-//                   "1
-// ");
+        assert_eq!(res,
+                  "8
+3
+6
+2
+");
     }
 }
