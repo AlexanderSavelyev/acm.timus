@@ -4,16 +4,16 @@ use std::io::prelude::*;
 
 fn solve(input: &mut dyn Read, output: &mut dyn Write) {
     let mut reader = BufReader::new(input);
-    let mut input = String::new();
+    let mut buf_str = String::new();
 
-    reader.read_line(&mut input).unwrap();
-    let n: i32 = input.trim().parse().unwrap();
+    reader.read_line(&mut buf_str).unwrap();
+    let t: usize = buf_str.trim().parse().unwrap();
 
-    for _ in 0..n {
-        input.clear();
-        reader.read_line(&mut input).unwrap();
-        println!("{:?}", input);
-        // let mut s = input.trim().split(' ');
+    for _ in 0..t {
+        buf_str.clear();
+        reader.read_line(&mut buf_str).unwrap();
+        println!("{:?}", buf_str);
+        // let mut s = buf_str.trim().split(' ');
 
         // let a_str = s.next().unwrap();
         // let a: i32 = a_str.trim().parse().unwrap();
@@ -22,6 +22,7 @@ fn solve(input: &mut dyn Read, output: &mut dyn Write) {
         // let b: i32 = b_str.trim().parse().unwrap();
 
         // println!("{} {}", a,b);
+        writeln!(output, "{} {}", a,b).expect("valid string");
     }
 
     // println!("{}", n);
